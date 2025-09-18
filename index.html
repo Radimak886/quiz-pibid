@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Função do 1° Grau</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .btn-option {
+            transition: all 0.3s ease;
+        }
+        .btn-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .correct {
+            background-color: #2dd4bf !important;
+            color: white !important;
+            border-color: #2dd4bf !important;
+        }
+        .incorrect {
+            background-color: #f87171 !important;
+            color: white !important;
+            border-color: #f87171 !important;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+
+    <div id="app-container" class="w-full max-w-2xl mx-auto">
+        
+        <!-- Tela de Início -->
+        <div id="start-screen" class="card rounded-2xl p-8 text-center shadow-2xl">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Quiz: Função do 1° Grau</h1>
+            <p class="text-gray-600 mb-8">Escolha quantas perguntas você quer responder.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button onclick="startQuiz(5)" class="w-full sm:w-auto bg-violet-500 hover:bg-violet-600 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition-transform transform hover:scale-105">5 Perguntas</button>
+                <button onclick="startQuiz(10)" class="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition-transform transform hover:scale-105">10 Perguntas</button>
+                <button onclick="startQuiz(15)" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transition-transform transform hover:scale-105">15 Perguntas</button>
+            </div>
+        </div>
+
+        <!-- Tela do Quiz -->
+        <div id="quiz-screen" class="hidden card rounded-2xl p-8 shadow-2xl">
+            <div class="mb-6">
+                <p id="progress-text" class="text-sm text-gray-500 text-center">Pergunta 1 de 10</p>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                    <div id="progress-bar" class="bg-violet-500 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+            <h2 id="question-title" class="text-2xl font-semibold text-gray-800 mb-6 text-center">Carregando pergunta...</h2>
+            <div id="answer-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Botões de resposta serão inseridos aqui -->
+            </div>
+            <div id="explanation-box" class="hidden mt-6 p-4 rounded-lg border">
+                <!-- Explicação da resposta será inserida aqui -->
+            </div>
+            <div class="mt-8 text-center">
+                 <button id="next-button" class="hidden bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-10 rounded-lg text-lg transition-transform transform hover:scale-105">Próxima</button>
+            </div>
+        </div>
+
+        <!-- Tela de Resultados -->
+        <div id="result-screen" class="hidden card rounded-2xl p-8 text-center shadow-2xl">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Quiz Finalizado!</h2>
+            <p id="score-text" class="text-2xl text-gray-600 mb-8">Você acertou 8 de 10 perguntas!</p>
+            <button onclick="restartQuiz()" class="bg-violet-500 hover:bg-violet-600 text-white font-bold py-3 px-10 rounded-lg text-lg shadow-lg transition-transform transform hover:scale-105">Jogar Novamente</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Elementos da DOM ---
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        
+        const questionTitle = document.getElementById('question-title');
+        const answerButtons = document.getElementById('answer-buttons');
+        const nextButton = document.getElementById('next-button');
+        const explanationBox = document.getElementById('explanation-box');
+        
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const scoreText = document.getElementById('score-text');
+
+        // --- Banco de Perguntas ---
+        const allQuestions = [
+            {
+                question: "Qual é a forma geral de uma função do 1º grau?",
+                answers: [
+                    { text: "f(x) = ax² + bx + c" },
+                    { text: "f(x) = ax + b" },
+                    { text: "f(x) = a/x + b" },
+                    { text: "f(x) = a^x" }
+                ],
+                correctIndex: 1,
+                explanation: "A forma geral de uma função do 1º grau (ou função afim) é f(x) = ax + b, onde 'a' é o coeficiente angular e 'b' é o coeficiente linear. A forma f(x) = ax² + bx + c representa uma função do 2º grau."
+            },
+            {
+                question: "Na função f(x) = 3x - 6, qual é o coeficiente angular?",
+                answers: [
+                    { text: "3" },
+                    { text: "-6" },
+                    { text: "6" },
+                    { text: "-3" }
+                ],
+                correctIndex: 0,
+                explanation: "Na função f(x) = ax + b, o coeficiente angular ('a') é o número que multiplica o 'x'. Portanto, em f(x) = 3x - 6, o coeficiente angular é 3."
+            },
+            {
+                question: "O gráfico de uma função do 1º grau é sempre uma:",
+                answers: [
+                    { text: "Parábola" },
+                    { text: "Curva" },
+                    { text: "Reta" },
+                    { text: "Hipérbole" }
+                ],
+                correctIndex: 2,
+                explanation: "O gráfico de toda função do 1º grau, f(x) = ax + b, é uma reta. Parábolas são gráficos de funções do 2º grau."
+            },
+            {
+                question: "Uma função f(x) = ax + b é considerada crescente quando:",
+                answers: [
+                    { text: "a < 0" },
+                    { text: "a = 0" },
+                    { text: "b > 0" },
+                    { text: "a > 0" }
+                ],
+                correctIndex: 3,
+                explanation: "Uma função do 1º grau é crescente quando seu coeficiente angular ('a') é maior que zero (a > 0). Se a < 0, a função é decrescente."
+            },
+            {
+                question: "Qual é a raiz (ou zero) da função f(x) = 2x - 10?",
+                answers: [
+                    { text: "-10" },
+                    { text: "10" },
+                    { text: "5" },
+                    { text: "-5" }
+                ],
+                correctIndex: 2,
+                explanation: "Para encontrar a raiz de uma função, igualamos f(x) a zero: 2x - 10 = 0. Somando 10 em ambos os lados, temos 2x = 10. Dividindo por 2, encontramos x = 5."
+            },
+            {
+                question: "Na função f(x) = -5x + 15, qual é o coeficiente linear?",
+                answers: [
+                    { text: "-5" },
+                    { text: "5" },
+                    { text: "15" },
+                    { text: "3" }
+                ],
+                correctIndex: 2,
+                explanation: "Na função f(x) = ax + b, o coeficiente linear ('b') é o termo independente, que não multiplica 'x'. Portanto, em f(x) = -5x + 15, o coeficiente linear é 15."
+            },
+            {
+                question: "O coeficiente linear 'b' na função f(x) = ax + b indica o ponto onde o gráfico corta qual eixo?",
+                answers: [
+                    { text: "Eixo y (ordenadas)" },
+                    { text: "Eixo x (abscissas)" },
+                    { text: "A origem (0,0)" },
+                    { text: "Nenhum dos eixos" }
+                ],
+                correctIndex: 0,
+                explanation: "O coeficiente linear ('b') representa o valor de y quando x = 0. Portanto, é o ponto (0, b) onde o gráfico corta o eixo y (eixo das ordenadas)."
+            },
+            {
+                question: "Dada a função f(x) = 4x + 5, qual o valor de f(3)?",
+                answers: [
+                    { text: "12" },
+                    { text: "9" },
+                    { text: "17" },
+                    { text: "23" }
+                ],
+                correctIndex: 2,
+                explanation: "Para encontrar f(3), substituímos 'x' por 3 na função: f(3) = 4 * (3) + 5. Isso resulta em f(3) = 12 + 5, que é igual a 17."
+            },
+            {
+                question: "A função f(x) = -x + 7 é:",
+                answers: [
+                    { text: "Crescente" },
+                    { text: "Decrescente" },
+                    { text: "Constante" },
+                    { text: "Exponencial" }
+                ],
+                correctIndex: 1,
+                explanation: "A função f(x) = -x + 7 tem coeficiente angular a = -1. Como 'a' é um número negativo (a < 0), a função é classificada como decrescente."
+            },
+            {
+                question: "Qual o ponto em que o gráfico de f(x) = x - 8 corta o eixo das abscissas (eixo x)?",
+                answers: [
+                    { text: "(0, 8)" },
+                    { text: "(8, 0)" },
+                    { text: "(0, -8)" },
+                    { text: "(-8, 0)" }
+                ],
+                correctIndex: 1,
+                explanation: "O gráfico corta o eixo x (abscissas) quando y (ou f(x)) é igual a zero. Então, resolvemos a equação x - 8 = 0, o que nos dá x = 8. O ponto no gráfico é (8, 0)."
+            },
+            {
+                question: "Um motorista de aplicativo cobra R$ 5,00 fixos por viagem mais R$ 1,50 por km rodado. Qual função representa o valor V a ser pago por uma viagem de x quilômetros?",
+                answers: [
+                    { text: "V(x) = 5x + 1,50" },
+                    { text: "V(x) = 5 + 1,50x" },
+                    { text: "V(x) = 5 - 1,50x" },
+                    { text: "V(x) = 6,50x" }
+                ],
+                correctIndex: 1,
+                explanation: "O valor total (V) é a soma da parte fixa (R$ 5,00) com a parte variável (R$ 1,50 multiplicado pelo número de quilômetros 'x'). A função correta é V(x) = 1,50x + 5."
+            },
+            {
+                question: "Se f(x) = ax + b, com f(1) = 5 e f(2) = 8, quais os valores de 'a' e 'b'?",
+                answers: [
+                    { text: "a = 2, b = 3" },
+                    { text: "a = 3, b = 5" },
+                    { text: "a = 5, b = 2" },
+                    { text: "a = 3, b = 2" }
+                ],
+                correctIndex: 3,
+                explanation: "Temos um sistema de equações: {a(1) + b = 5} e {a(2) + b = 8}. Subtraindo a primeira equação da segunda: (2a+b) - (a+b) = 8-5, o que resulta em a = 3. Substituindo 'a=3' na primeira equação: 3(1) + b = 5, então b = 2."
+            },
+             {
+                question: "Qual das seguintes funções é uma função afim constante?",
+                answers: [
+                    { text: "f(x) = 3x" },
+                    { text: "f(x) = 5" },
+                    { text: "f(x) = x + 1" },
+                    { text: "f(x) = -x" }
+                ],
+                correctIndex: 1,
+                explanation: "Uma função afim é constante quando seu coeficiente angular 'a' é igual a zero (f(x) = b). Na opção f(x) = 5, temos a=0 e b=5, portanto é uma função constante."
+            },
+            {
+                question: "Dada a função f(x) = -2x + 6, para qual valor de x temos f(x) = 0?",
+                answers: [
+                    { text: "x = 6" },
+                    { text: "x = -2" },
+                    { text: "x = 3" },
+                    { text: "x = -3" }
+                ],
+                correctIndex: 2,
+                explanation: "Para encontrar o valor de x quando f(x) = 0 (a raiz da função), resolvemos a equação: -2x + 6 = 0. Subtraindo 6 de ambos os lados, temos -2x = -6. Dividindo por -2, encontramos x = 3."
+            },
+            {
+                question: "O gráfico da função f(x) = 10x passa pela origem (0,0)?",
+                answers: [
+                    { text: "Sim, pois o coeficiente linear é 0." },
+                    { text: "Não, pois o coeficiente angular é 10." },
+                    { text: "Sim, pois toda reta passa pela origem." },
+                    { text: "Não, pois o coeficiente linear é 10." }
+                ],
+                correctIndex: 0,
+                explanation: "Um gráfico passa pela origem (0,0) se o seu coeficiente linear 'b' for igual a zero. Na função f(x) = 10x, o 'b' é 0. Isso significa que o gráfico corta o eixo y no ponto y=0, ou seja, na origem."
+            }
+        ];
+        
+        // --- Estado do Quiz ---
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let numQuestions = 0;
+
+        // --- Funções do Quiz ---
+
+        function startQuiz(selectedNum) {
+            numQuestions = selectedNum;
+            score = 0;
+            currentQuestionIndex = 0;
+            
+            // Embaralha e seleciona as perguntas
+            currentQuestions = allQuestions.sort(() => Math.random() - 0.5).slice(0, numQuestions);
+            
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            
+            showQuestion();
+        }
+
+        function showQuestion() {
+            resetState();
+            const question = currentQuestions[currentQuestionIndex];
+            questionTitle.innerText = question.question;
+            
+            question.answers.forEach((answer, index) => {
+                const button = document.createElement('button');
+                button.innerText = answer.text;
+                button.classList.add('btn-option', 'w-full', 'text-left', 'p-4', 'border-2', 'border-gray-300', 'rounded-lg', 'text-gray-700', 'hover:bg-gray-100', 'hover:border-violet-400');
+                button.dataset.correct = (index === question.correctIndex);
+                button.addEventListener('click', selectAnswer);
+                answerButtons.appendChild(button);
+            });
+
+            updateProgress();
+        }
+
+        function resetState() {
+            nextButton.classList.add('hidden');
+            explanationBox.classList.add('hidden');
+            while (answerButtons.firstChild) {
+                answerButtons.removeChild(answerButtons.firstChild);
+            }
+        }
+
+        function selectAnswer(e) {
+            const selectedButton = e.target;
+            const isCorrect = selectedButton.dataset.correct === 'true';
+            const explanation = currentQuestions[currentQuestionIndex].explanation;
+
+            if (isCorrect) {
+                score++;
+                selectedButton.classList.add('correct');
+                explanationBox.innerHTML = `<h3 class="font-bold text-lg mb-2 text-teal-700">Parabéns, resposta correta!</h3><p class="text-teal-800">${explanation}</p>`;
+                explanationBox.className = 'mt-6 p-4 rounded-lg border-2 border-teal-500 bg-teal-100';
+            } else {
+                selectedButton.classList.add('incorrect');
+                explanationBox.innerHTML = `<h3 class="font-bold text-lg mb-2 text-red-700">Resposta incorreta.</h3><p class="text-red-800">${explanation}</p>`;
+                explanationBox.className = 'mt-6 p-4 rounded-lg border-2 border-red-500 bg-red-100';
+            }
+
+            Array.from(answerButtons.children).forEach(button => {
+                if (button.dataset.correct === 'true') {
+                    if(!button.classList.contains('correct')) button.classList.add('correct');
+                }
+                button.disabled = true; // Desabilita todos os botões
+            });
+
+            explanationBox.classList.remove('hidden');
+            nextButton.classList.remove('hidden');
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < numQuestions) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        function updateProgress() {
+            const progressPercentage = ((currentQuestionIndex + 1) / numQuestions) * 100;
+            progressText.innerText = `Pergunta ${currentQuestionIndex + 1} de ${numQuestions}`;
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+        
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            scoreText.innerText = `Você acertou ${score} de ${numQuestions} perguntas!`;
+        }
+        
+        function restartQuiz() {
+            resultScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
+
