@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Notas - Contemporâneo Centro Educacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.5);
+            transition: opacity 0.3s ease;
+            overflow-y: auto;
+            z-index: 50;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+        .active-tab-button {
+            border-bottom-color: #16a34a; /* green-500 */
+            color: #16a34a; /* green-500 */
+            font-weight: 600;
+        }
+        .inactive-tab-button {
+            border-bottom-color: transparent;
+            color: #6b7280; /* gray-500 */
+        }
+        .active-tab {
+            ring: 4px;
+            ring-offset: 2px;
+            --tw-ring-color: #ef4444; /* red-500 */
+            box-shadow: 0 0 0 4px var(--tw-ring-color);
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #16a34a; /* green-500 */
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        #toast-notification {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            z-index: 1000;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Notificação Toast -->
+    <div id="toast-notification" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-5 rounded-lg shadow-lg hidden opacity-0 transform translate-x-10">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Container da Aplicação Principal (Inicialmente Oculto) -->
+    <div id="app-container" class="hidden max-w-7xl mx-auto">
+        <header class="bg-green-700 text-white p-6 rounded-xl shadow-lg mb-8 text-center flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl md:text-4xl font-bold">Contemporâneo Centro Educacional</h1>
+                <p class="text-md text-green-100 mt-2">Sistema de Gerenciamento de Notas dos Alunos</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="settings-btn" class="p-2 rounded-full hover:bg-green-600 transition" title="Configurações">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+                 <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition">Sair</button>
+            </div>
+        </header>
+
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-700 mb-3">Selecione a Turma</h2>
+                    <div id="class-tabs" class="flex flex-wrap gap-3"></div>
+                </div>
+                <div class="flex-grow md:max-w-md flex items-end gap-2">
+                    <div class="flex-grow">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Buscar Aluno</h2>
+                        <input type="text" id="search-input" placeholder="Digite o nome do aluno..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition">
+                    </div>
+                     <button id="add-student-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-md h-10" title="Adicionar Novo Aluno">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <main class="bg-white p-4 sm:p-6 rounded-xl shadow-md overflow-x-auto">
+             <div class="flex justify-between items-center mb-4">
+                <h2 id="class-title" class="text-2xl font-bold text-gray-800">Selecione uma turma para começar</h2>
+                <button id="class-summary-btn" class="hidden bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition shadow text-sm font-semibold">✨ Gerar Resumo da Turma com IA</button>
+             </div>
+            <table class="w-full text-left">
+                <thead class="border-b-2 border-gray-200">
+                    <tr>
+                        <th class="p-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Aluno</th>
+                        <th class="p-4 text-sm font-semibold text-gray-600 uppercase tracking-wider text-center">Média Final</th>
+                        <th class="p-4 text-sm font-semibold text-gray-600 uppercase tracking-wider text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="student-list">
+                     <tr><td colspan="3" class="text-center p-8 text-gray-500">Nenhuma turma selecionada.</td></tr>
+                </tbody>
+            </table>
+        </main>
+        <footer class="text-center text-sm text-gray-500 mt-8 pb-4">
+            Criado por Kelvin Radimak
+        </footer>
+    </div>
+
+    <!-- Container de Autenticação (Inicialmente Visível) -->
+    <div id="auth-container" class="max-w-md mx-auto mt-10">
+        <div class="bg-white p-8 rounded-xl shadow-lg">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-green-700">Bem-vindo ao Sistema de Notas</h1>
+                <p class="text-gray-500">Faça login ou crie uma conta para continuar</p>
+            </div>
+            
+            <form id="login-form">
+                <h2 class="text-xl font-semibold mb-4">Login</h2>
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="login-email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="mb-4">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700">Senha</label>
+                    <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                 <div class="text-right mb-6">
+                    <a href="#" id="forgot-password-link" class="text-sm text-green-600 hover:underline">Esqueci a senha</a>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-semibold">Entrar</button>
+            </form>
+
+            <div class="my-6 border-t"></div>
+
+            <form id="register-form">
+                <h2 class="text-xl font-semibold mb-4">Criar Nova Conta</h2>
+                <div class="mb-4">
+                    <label for="register-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="register-email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="mb-6">
+                    <label for="register-password" class="block text-sm font-medium text-gray-700">Senha (mínimo 6 caracteres)</label>
+                    <input type="password" id="register-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-semibold">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="edit-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden opacity-0">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl modal-content transform scale-95">
+             <div class="p-6 border-b bg-green-600 text-white rounded-t-xl">
+                <h2 class="text-2xl font-bold">Editar Aluno</h2>
+                <p id="edit-student-name-header" class="text-md text-green-100"></p>
+            </div>
+            
+            <!-- Abas de Navegação do Modal -->
+            <nav class="border-b border-gray-200">
+                <div class="flex -mb-px px-6">
+                    <button id="tab-btn-details" class="py-4 px-1 border-b-2 font-medium text-sm active-tab-button">
+                        Detalhes do Aluno
+                    </button>
+                    <button id="tab-btn-grades" class="py-4 px-1 ml-8 border-b-2 font-medium text-sm inactive-tab-button">
+                        Editar Notas
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Conteúdo da Aba "Detalhes" -->
+            <div id="tab-content-details" class="p-6 space-y-4">
+                <h3 class="font-semibold text-lg text-gray-800">Informações do Aluno</h3>
+                <div>
+                    <label for="edit-student-name-input" class="block text-sm font-medium text-gray-700">Nome do Aluno</label>
+                    <input type="text" id="edit-student-name-input" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                </div>
+                <div>
+                    <label for="edit-student-class-select" class="block text-sm font-medium text-gray-700">Mudar Turma</label>
+                    <select id="edit-student-class-select" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                        <!-- Opções de turma serão preenchidas dinamicamente -->
+                    </select>
+                </div>
+                <div class="pt-4 border-t">
+                     <button id="delete-student-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition shadow text-sm font-semibold">Excluir Aluno</button>
+                     <p class="text-xs text-gray-500 mt-1">Atenção: Esta ação é permanente.</p>
+                </div>
+            </div>
+
+            <!-- Conteúdo da Aba "Notas" -->
+            <div id="tab-content-grades" class="p-6 space-y-4 max-h-[50vh] overflow-y-auto hidden">
+                <h3 class="font-semibold text-lg text-gray-800">Lançar Notas</h3>
+                <!-- Campos de nota por unidade serão inseridos aqui -->
+            </div>
+
+            <div class="p-6 bg-gray-50 rounded-b-xl flex justify-end items-center gap-4">
+                <button id="close-edit-modal-btn" class="text-gray-600 font-semibold px-4 py-2 rounded-lg hover:bg-gray-200 transition">Cancelar</button>
+                <button id="save-grades-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition shadow">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="report-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden opacity-0">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl modal-content transform scale-95">
+             <div class="p-6 border-b flex justify-between items-start bg-green-600 text-white rounded-t-xl">
+                <h2 class="text-2xl font-bold ">Relatório Pedagógico do Aluno</h2>
+                <button id="close-report-modal-btn" class="text-green-100 hover:text-white transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto p-6">
+                <div id="report-content"></div>
+                <div id="qualitative-assessment" class="mt-6 bg-gray-50 p-4 rounded-lg border">
+                    <h3 class="font-semibold text-lg text-gray-800 mb-4">Avaliação Qualitativa</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="font-medium text-gray-700">Participação em aula:</label>
+                            <div class="flex flex-wrap gap-4 mt-2" id="q1">
+                                <label><input type="radio" name="participation" value="Ativa e contribui" class="mr-1"> Ativa</label>
+                                <label><input type="radio" name="participation" value="Ocasional" class="mr-1"> Ocasional</label>
+                                <label><input type="radio" name="participation" value="Passiva" class="mr-1"> Passiva</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-medium text-gray-700">Entrega de tarefas:</label>
+                            <div class="flex flex-wrap gap-4 mt-2" id="q2">
+                                <label><input type="radio" name="homework" value="Sempre no prazo" class="mr-1"> Em dia</label>
+                                <label><input type="radio" name="homework" value="Às vezes atrasa" class="mr-1"> Às vezes</label>
+                                <label><input type="radio" name="homework" value="Raramente entrega" class="mr-1"> Raramente</label>
+                            </div>
+                        </div>
+                         <div>
+                            <label class="font-medium text-gray-700">Comportamento em sala:</label>
+                            <div class="flex flex-wrap gap-4 mt-2" id="q3">
+                                <label><input type="radio" name="behavior" value="Exemplar" class="mr-1"> Exemplar</label>
+                                <label><input type="radio" name="behavior" value="Adequado" class="mr-1"> Adequado</label>
+                                <label><input type="radio" name="behavior" value="Requer atenção" class="mr-1"> Requer atenção</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-medium text-gray-700">Interesse pela matéria:</label>
+                            <div class="flex flex-wrap gap-4 mt-2" id="q4">
+                                <label><input type="radio" name="interest" value="Muito interessado" class="mr-1"> Alto</label>
+                                <label><input type="radio" name="interest" value="Interesse mediano" class="mr-1"> Médio</label>
+                                <label><input type="radio" name="interest" value="Pouco interessado" class="mr-1"> Baixo</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="observations" class="font-medium text-gray-700">Observações Adicionais</label>
+                            <textarea id="observations" rows="3" class="w-full mt-2 p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none" placeholder="Digite aqui pontos importantes sobre o aluno..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                 <div id="ai-analysis-container" class="mt-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg" style="display: none;"></div>
+            </div>
+             <div class="p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
+                 <button id="ai-analysis-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition shadow disabled:opacity-50">✨ Gerar Análise com IA</button>
+                 <button id="print-report-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition shadow" disabled>Imprimir</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Resumo da Turma -->
+    <div id="summary-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden opacity-0">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl modal-content transform scale-95">
+             <div class="p-6 border-b flex justify-between items-start bg-green-600 text-white rounded-t-xl">
+                <h2 id="summary-title" class="text-2xl font-bold">Resumo da Turma</h2>
+                <button id="close-summary-modal-btn" class="text-green-100 hover:text-white transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="summary-content" class="max-h-[70vh] overflow-y-auto p-6 prose prose-lg">
+                <canvas id="grade-chart" class="my-4"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Configurações (API Key) -->
+    <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden opacity-0">
+        <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl modal-content transform scale-95">
+             <div class="p-6 border-b flex justify-between items-start bg-green-600 text-white rounded-t-xl">
+                <h2 class="text-2xl font-bold">Configurações</h2>
+                <button id="close-settings-modal-btn" class="text-green-100 hover:text-white transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p id="settings-message" class="text-center text-sm text-red-600 font-medium hidden"></p>
+                <div>
+                    <label for="gemini-api-key-input" class="block text-sm font-medium text-gray-700">Chave da API do Gemini</label>
+                    <input type="password" id="gemini-api-key-input" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none" placeholder="Cole sua chave de API aqui">
+                    <p class="text-xs text-gray-500 mt-1">Sua chave é salva apenas no seu navegador.</p>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 rounded-b-xl flex justify-end items-center gap-4">
+                <button id="save-settings-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition shadow">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Aluno -->
+    <div id="add-student-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden opacity-0">
+        <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl modal-content transform scale-95">
+             <div class="p-6 border-b bg-green-600 text-white rounded-t-xl">
+                <h2 class="text-2xl font-bold">Adicionar Novo Aluno</h2>
+                <button id="close-add-student-modal-btn" class="text-green-100 hover:text-white transition absolute top-6 right-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="new-student-name-input" class="block text-sm font-medium text-gray-700">Nome Completo do Aluno</label>
+                    <input type="text" id="new-student-name-input" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                </div>
+                <div>
+                    <label for="new-student-class-select" class="block text-sm font-medium text-gray-700">Turma</label>
+                    <select id="new-student-class-select" class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                        <!-- Opções de turma serão preenchidas dinamicamente -->
+                    </select>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 rounded-b-xl flex justify-end items-center gap-4">
+                <button id="cancel-add-student-btn" class="text-gray-600 font-semibold px-4 py-2 rounded-lg hover:bg-gray-200 transition">Cancelar</button>
+                <button id="save-new-student-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition shadow">Salvar Aluno</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Confirmação de Exclusão -->
+    <div id="confirm-delete-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop hidden opacity-0">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-2xl modal-content transform scale-95">
+             <div class="p-6">
+                <h2 class="text-2xl font-bold text-gray-800">Confirmar Exclusão</h2>
+                <p class="text-gray-600 mt-4">Você tem certeza que deseja excluir o aluno <strong id="delete-student-name"></strong>? Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="p-6 bg-gray-50 rounded-b-xl flex justify-end items-center gap-4">
+                <button id="cancel-delete-btn" class="text-gray-600 font-semibold px-4 py-2 rounded-lg hover:bg-gray-200 transition">Cancelar</button>
+                <button id="confirm-delete-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition shadow">Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            signInWithEmailAndPassword, 
+            signOut,
+            sendPasswordResetEmail,
+            createUserWithEmailAndPassword // <-- CORREÇÃO: Adicionado
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DADOS INICIAIS PARA NOVOS USUÁRIOS ---
+        const initialStudentData = {
+            "6A": [
+                { id: 101, name: "ALICE MATILDE SANTOS", grades: [{ final: 10.0 }, { final: 9.0 }, { final: 10.0 }, { sae: 2.5, prova: 5.0 }, null, null]},
+                { id: 102, name: "ANA CLARA LIMA ARAÚJO BASTOS", grades: [{ final: 10.0 }, { final: 8.0 }, { final: 10.0 }, { sae: 2.5, prova: 5.0 }, null, null]},
+                { id: 103, name: "ANTHONY GABRIEL SOUZA MENEZES", grades: [{ final: 10.0 }, { final: 10.0 }, { final: 10.0 }, { sae: 3.5, prova: 8.0 }, null, null]},
+                { id: 104, name: "BEATRIZ VIANA DOS SANTOS", grades: [{ final: 10.0 }, { final: 10.0 }, { final: 10.0 }, { sae: 1.0, prova: 1.0 }, null, null]},
+                { id: 105, name: "CARLOS RYAN OLIVEIRA BOMFIM DOS SANTOS", grades: [{ final: 10.0 }, { final: 8.5 }, { final: 10.0 }, { sae: 1.5, prova: 2.0 }, null, null]},
+                { id: 106, name: "ENZZO SANTANA FEITOSA CAVALCANTE", grades: [{ final: 10.0 }, { final: 10.0 }, { final: 10.0 }, { sae: 5.0, prova: 10.0 }, null, null]},
+                { id: 107, name: "JÉSSICA FREIRE DE CARVALHO LEITE", grades: [{ final: 10.0 }, { final: 8.0 }, { final: 8.0 }, { sae: 0.0, prova: 3.0 }, null, null]},
+                { id: 108, name: "JOÃO GUILHERME GONÇALVES SANTOS", grades: [{ final: 10.0 }, { final: 6.5 }, { final: 10.0 }, { sae: 1.5, prova: 5.5 }, null, null]},
+                { id: 109, name: "JÚLIA CAROLLINY SOUZA ANDRADE", grades: [{ final: 7.5 }, { final: 6.0 }, { final: 7.0 }, { sae: 1.0, prova: 4.5 }, null, null]},
+                { id: 110, name: "KETHLYN SOPHYA SANTOS DE OLIVEIRA", grades: [{ final: 10.0 }, { final: 6.5 }, { final: 10.0 }, { sae: 0.0, prova: 4.0 }, null, null]},
+                { id: 111, name: "LUCAS EDUARDO DA SILVA COSTA", grades: [{ final: 7.5 }, { final: 10.0 }, { final: 10.0 }, { sae: 2.5, prova: 5.0 }, null, null]},
+                { id: 113, name: "PAULA FABIANA NASCIMENTO BARBOSA DÓRIA", grades: [{ final: 10.0 }, { final: 6.0 }, { final: 6.0 }, { sae: 1.5, prova: 4.0 }, null, null]},
+                { id: 114, name: "PHILLIPE RAFAEL SANTANA SANTOS", grades: [{ final: 10.0 }, { final: 10.0 }, { final: 10.0 }, { sae: 3.5, prova: 5.5 }, null, null]},
+                { id: 115, name: "TONNY NÉO DA ROCHA", grades: [{ final: 10.0 }, { final: 10.0 }, { final: 10.0 }, { sae: 4.0, prova: 9.0 }, null, null]}
+            ],
+            "7A": [
+                 { id: 201, name: "ADEMIR JÚNIOR ALMEIDA OLIVEIRA", grades: [null, null, null, { sae: 3.5, prova: 7.0 }, null, null]},
+                 { id: 202, name: "ALÍCIA MARIA DE SOUZA BARROS", grades: [null, null, null, { sae: 3.5, prova: null }, null, null]},
+                 { id: 203, name: "ANNA JÚLIA DOS SANTOS GONÇALVES", grades: [null, null, null, { sae: 3.5, prova: 7.0 }, null, null]},
+                 { id: 204, name: "ANTONNY RAPHAEL CARDOSO DOS SANTOS", grades: [null, null, null, null, null, null]},
+                 { id: 205, name: "ARTHUR VALDIR BATISTA DOS SANTOS", grades: [null, null, null, { sae: 1.6, prova: 4.75 }, null, null]},
+                 { id: 206, name: "ARTHUR FERREIRA DE SANTANA", grades: [null, null, null, { sae: 1.0, prova: 3.0 }, null, null]},
+                 { id: 207, name: "ARTHUR MIGUEL DE SANTANA ARAGÃO", grades: [null, null, null, { sae: 2.5, prova: 9.75 }, null, null]},
+                 { id: 208, name: "ARTHUR SILVA OLIVEIRA SANTOS", grades: [null, null, null, { sae: 1.6, prova: 6.5 }, null, null]},
+                 { id: 209, name: "AYLA SOFHIA MATEUS DOS SANTOS", grades: [null, null, null, { sae: 1.0, prova: 6.5 }, null, null]},
+                 { id: 210, name: "CAIO JOAQUIM BORGES MELO", grades: [null, null, null, { sae: 3.5, prova: 5.0 }, null, null]},
+                 { id: 211, name: "CAIO LUCAS DE SANTANA", grades: [null, null, null, { sae: 1.6, prova: 5.0 }, null, null]},
+                 { id: 212, name: "CAUÃ VICTOR NOBRE FLORIANO", grades: [null, null, null, { sae: 1.5, prova: 4.5 }, null, null]},
+                 { id: 213, name: "CAUÊ SOUZA MATOS FILHO", grades: [null, null, null, { sae: 2.0, prova: 2.5 }, null, null]},
+                 { id: 214, name: "GUILHERME FERNANDES SANTOS BARROS", grades: [null, null, null, { sae: 0.0, prova: 10.0 }, null, null]},
+                 { id: 215, name: "JEFFERSON CAUÃ RODRIGUES BERNARDES", grades: [null, null, null, { sae: 4.0, prova: 10.0 }, null, null]},
+                 { id: 216, name: "JENNIFER LORENA RODRIGUES DOS SANTOS", grades: [null, null, null, { sae: 2.5, prova: 6.75 }, null, null]},
+                 { id: 217, name: "JOÃO PEDRO SANTOS ROSA MARTINS", grades: [null, null, null, { sae: 2.5, prova: 8.0 }, null, null]},
+                 { id: 218, name: "JÚLIA EXPEDITA SÁ DANTAS", grades: [null, null, null, { sae: 3.0, prova: null }, null, null]},
+                 { id: 219, name: "LETÍCIA MERIELEN SANTOS DE AQUINO", grades: [null, null, null, { sae: 1.6, prova: 5.0 }, null, null]},
+                 { id: 220, name: "LUIZ GUILHERME DOS SANTOS FONSECA", grades: [null, null, null, { sae: 1.0, prova: 5.75 }, null, null]},
+                 { id: 221, name: "MARIA AGATHA SANTOS SILVA", grades: [null, null, null, { sae: 3.5, prova: 5.0 }, null, null]},
+                 { id: 222, name: "MARIA EDUARDA SANTOS", grades: [null, null, null, { sae: 3.5, prova: 7.75 }, null, null]},
+                 { id: 223, name: "MICAELLY VITÓRIA SANTOS DO AMOR DIVINO", grades: [null, null, null, { sae: 1.0, prova: 6.75 }, null, null]},
+                 { id: 224, name: "SOPHIA SANTOS FRANÇA DE OLIVEIRA", grades: [null, null, null, { sae: 1.0, prova: 10.0 }, null, null]},
+                 { id: 225, name: "WELLINGTON SILVA DOS SANTOS", grades: [null, null, null, { sae: 1.0, prova: 5.75 }, null, null]},
+                 { id: 226, name: "WENDELL MENEZES SANTOS GOIS", grades: [null, null, null, { sae: 2.5, prova: 4.0 }, null, null]}
+            ],
+             "8A": [
+                { id: 301, name: "ALICIA BARBOSA FONTES", grades: [{ final: 10 }, { final: 10 }, { final: 10 }, { sae: 4.5, prova: 8.5 }, null, null]},
+                { id: 302, name: "ALICY DOS SANTOS MONTEIRO", grades: [null, null, null, { sae: 3.5, prova: 3.0 }, null, null]},
+                { id: 303, name: "ANTÔNIO CÉSAR FONTES DE JESUS", grades: [null, null, null, { sae: 2.0, prova: null }, null, null]},
+                { id: 304, name: "ARTHUR GABRIEL CORREIA PASSOS", grades: [null, null, null, { sae: 1.0, prova: 2.0 }, null, null]},
+                { id: 305, name: "CLAUDIO VINICIUS SILVA BISPO", grades: [null, null, null, { sae: 1.0, prova: 2.0 }, null, null]},
+                { id: 306, name: "GABRIEL DA SILVA SANTOS GUIMARÃES", grades: [null, null, null, { sae: 2.5, prova: 4.0 }, null, null]},
+                { id: 307, name: "GUSTAVO CAUÊ ANDRADE DE SÁ", grades: [null, null, null, { sae: 3.4, prova: 3.0 }, null, null]},
+                { id: 308, name: "HELENA VICTÓRIA MATTOS DA SILVA", grades: [null, null, null, { sae: 3.5, prova: 3.5 }, null, null]},
+                { id: 309, name: "HELENA SANTOS RODRIGUES", grades: [null, null, null, { sae: 3.5, prova: 2.0 }, null, null]},
+                { id: 311, name: "JOÃO CARLOS DE SANTANA GONÇALVES", grades: [null, null, null, { sae: 2.0, prova: 3.5 }, null, null]},
+                { id: 312, name: "JOÃO GUILHERME SOUZA DA SILVA", grades: [null, null, null, { sae: 2.0, prova: 2.0 }, null, null]},
+                { id: 313, name: "JULIA GABRIELLY DE FARIA ALVES", grades: [null, null, null, { sae: 2.0, prova: 2.0 }, null, null]},
+                { id: 314, name: "JÚLIA VITÓRIA PEREIRA DOS SANTOS", grades: [null, null, null, { sae: 3.5, prova: 6.0 }, null, null]},
+                { id: 315, name: "KAIO DA SILVA ANUNCIAÇÃO", grades: [null, null, null, { sae: 3.5, prova: 3.0 }, null, null]},
+                { id: 316, name: "KAUÃ FELIPE DE OLIVEIRA ESTEVAM", grades: [null, null, null, { sae: 1.0, prova: null }, null, null]},
+                { id: 317, name: "KAUANNY RODRIGUES SANTOS", grades: [null, null, null, { sae: 3.5, prova: 4.0 }, null, null]},
+                { id: 318, name: "LAVÍNIA LAURENTINO CARDOSO", grades: [null, null, null, { sae: 2.0, prova: 4.0 }, null, null]},
+                { id: 319, name: "LUAN MICKAEL SANTOS CHAGAS", grades: [null, null, null, { sae: 4.5, prova: 3.0 }, null, null]},
+                { id: 320, name: "LUIS MIGUEL SANTANA DE OLIVEIRA", grades: [null, null, null, { sae: 4.5, prova: 3.0 }, null, null]},
+                { id: 321, name: "LUISA GRAZIELLA NUNES DOS SANTOS", grades: [null, null, null, { sae: 2.0, prova: 2.0 }, null, null]},
+                { id: 322, name: "LUIZ FELIPE GOMES DO NASCIMENTO", grades: [null, null, null, { sae: 3.0, prova: 4.0 }, null, null]},
+                { id: 323, name: "MARIA EDUARDA LIMA SILVA PINTO", grades: [null, null, null, { sae: 3.5, prova: 4.0 }, null, null]},
+                { id: 324, name: "MARIA HELENA MATTOS DA SILVA", grades: [null, null, null, { sae: 3.5, prova: 2.5 }, null, null]},
+                { id: 325, name: "MARINA NEVES MELO", grades: [null, null, null, { sae: 2.5, prova: 3.0 }, null, null]},
+                { id: 326, name: "MAYARA VICTORIA SILVA DE ANDRADE", grades: [null, null, null, { sae: 1.0, prova: 1.0 }, null, null]},
+                { id: 327, name: "PEDRO GABRIEL CORREIA RAMOS SANTOS", grades: [null, null, null, { sae: 1.0, prova: null }, null, null]},
+                { id: 328, name: "PEDRO GUILHERME SANTOS SILVA", grades: [null, null, null, { sae: 1.0, prova: 2.0 }, null, null]},
+                { id: 329, name: "PEDRO HENRIQUE SANTOS MESSIAS", grades: [null, null, null, { sae: 1.5, prova: 0.0 }, null, null]},
+                { id: 330, name: "PEDRO HENRIQUE TELES RODRIGUES", grades: [null, null, null, { sae: 1.0, prova: 0.0 }, null, null]},
+                { id: 331, name: "PEDRO VINÍCIUS RODRIGUES CORTES", grades: [null, null, null, { sae: 3.5, prova: 3.0 }, null, null]},
+                { id: 332, name: "VITÓRIA REGINA SANTOS DÓRIA", grades: [null, null, null, { sae: 3.5, prova: 4.0 }, null, null]},
+                { id: 333, name: "WILLIAN EMMANUEL VIEIRA CALIXTO", grades: [null, null, null, { sae: 2.5, prova: 2.0 }, null, null]}
+            ], 
+            "9A": [
+                { id: 401, name: "ADAILTON SANTOS CAVALCANTE FILHO", grades: [null, null, null, { sae: 1.5, prova: 4.0 }, null, null]},
+                { id: 402, name: "ALEXANDRE DE OLIVEIRA SANTOS", grades: [null, null, null, { sae: 0.0, prova: 2.8 }, null, null]},
+                { id: 403, name: "ANTONY PIETRO PEREIRA DA SILVA", grades: [null, null, null, { sae: 1.0, prova: 2.0 }, null, null]},
+                { id: 404, name: "ARTHUR FEITOSA DE SOUZA", grades: [null, null, null, { sae: 0.0, prova: 3.2 }, null, null]},
+                { id: 405, name: "ARTHUR GOMES E SILVA", grades: [null, null, null, { sae: 3.5, prova: 5.0 }, null, null]},
+                { id: 406, name: "ARTHUR SAMUEL DA SILVA OLIVEIRA COSTA", grades: [null, null, null, { sae: 1.5, prova: 3.5 }, null, null]},
+                { id: 407, name: "CARLOS EDUARDO MILTON SANTOS", grades: [null, null, null, { sae: 1.0, prova: 3.2 }, null, null]},
+                { id: 408, name: "GABRIELY VIEIRA DOS SANTOS", grades: [null, null, null, { sae: 2.5, prova: 5.0, atividade: 1.0 }, null, null]},
+                { id: 409, name: "ÍCARO GUILHERME OLIVEIRA SANTANA", grades: [null, null, null, null, null, null]},
+                { id: 410, name: "ÍCARO SAMUEL DAS DORES SANTOS", grades: [null, null, null, { sae: 0.0, prova: 4.5 }, null, null]},
+                { id: 411, name: "JOÃO GABRIEL MONTEIRO DA CONCEIÇÃO", grades: [null, null, null, { sae: 1.5, prova: 5.5 }, null, null]},
+                { id: 412, name: "JOÃO GUILHERME DOS SANTOS", grades: [null, null, null, { sae: 3.5, prova: 6.5 }, null, null]},
+                { id: 413, name: "JOÃO VICTOR SILVA BISPO", grades: [null, null, null, { sae: 3.5, prova: 5.0 }, null, null]},
+                { id: 414, name: "LAILA SOPHIA NUNES DE JESUS", grades: [null, null, null, { sae: 1.5, prova: 1.7, atividade: 1.0 }, null, null]},
+                { id: 415, name: "LETÍCIA SANTOS DE OLIVEIRA", grades: [null, null, null, { sae: 0.0, prova: 4.5, atividade: 1.0 }, null, null]},
+                { id: 416, name: "LUIZ PAULO BASTOS ZABINE", grades: [null, null, null, { sae: 1.5, prova: 4.5 }, null, null]},
+                { id: 417, name: "MANOEL MESSIAS DOS SANTOS BRANDÃO NETO", grades: [null, null, null, { sae: 1.0, prova: 5.7 }, null, null]},
+                { id: 418, name: "MARIA FERNANDA SANTANA HORA", grades: [null, null, null, { sae: 2.5, prova: 3.0, atividade: 1.0 }, null, null]},
+                { id: 419, name: "MATEUS SOUZA SANTOS", grades: [null, null, null, { sae: 1.5, prova: 4.5 }, null, null]},
+                { id: 420, name: "RAISSA DE MENEZES NASCIMENTO", grades: [null, null, null, { sae: 5.0, prova: 7.0 }, null, null]},
+                { id: 421, name: "REBECA VIEIRA SANTOS", grades: [null, null, null, { sae: 3.5, prova: 4.5, atividade: 1.0 }, null, null]},
+                { id: 422, name: "RICARDO SANTANA SILVA", grades: [null, null, null, { sae: 1.0, prova: 5.5 }, null, null]},
+                { id: 423, name: "SYLVIA VITÓRIA OLIVEIRA SANTOS", grades: [null, null, null, { sae: 1.0, prova: 4.0 }, null, null]},
+                { id: 424, name: "VITORIA CAMILLY DOS SANTOS", grades: [null, null, null, { sae: 1.5, prova: 5.8 }, null, null]},
+                { id: 425, name: "WANDERSON SANTOS VITORINO", grades: [null, null, null, { sae: 2.5, prova: 5.0 }, null, null]}
+            ], 
+            "9B": [
+                { id: 501, name: "ADERLAN MENEZES RIBEIRO FILHO", grades: [null, null, null, { sae: 1.0, prova: 1.0 }, { sae: 0.8, prova: null, atividade: null }, null]},
+                { id: 502, name: "AMANDA SOPHIA SANTOS DA PAZ", grades: [null, null, null, { sae: 1.5, prova: 7.5 }, { sae: 3.5, prova: null, atividade: null }, null]},
+                { id: 503, name: "ANANDA DEOCLECIANO SOUZA", grades: [null, null, null, { sae: 3.5, prova: 2.5 }, { sae: 1.6, prova: null, atividade: null }, null]},
+                { id: 504, name: "ANTONIO RAFAEL REGO DE BARROS", grades: [null, null, null, { sae: 2.5, prova: 4.0 }, { sae: 0.8, prova: null, atividade: null }, null]},
+                { id: 505, name: "ARTUR SANTOS DE JESUS", grades: [null, null, null, { sae: 3.5, prova: 5.0 }, { sae: 5.0, prova: null, atividade: null }, null]},
+                { id: 506, name: "CARLA VALENTINA MARTINEZ DA ROCHA", grades: [null, null, null, { sae: 1.5, prova: null }, { sae: 0.0, prova: null, atividade: null }, null]},
+                { id: 507, name: "ENZO GABRIEL FRANÇA SANTOS", grades: [null, null, null, { sae: 1.0, prova: 6.5 }, { sae: 2.5, prova: null, atividade: null }, null]},
+                { id: 508, name: "GUSTAVO HENRIQUE SANTOS CRUZ", grades: [null, null, null, { sae: 3.5, prova: 4.0 }, { sae: 1.6, prova: null, atividade: null }, null]},
+                { id: 509, name: "HELLEN MARIA ALVES FERREIRA DA SILVA", grades: [null, null, null, { sae: 2.5, prova: null }, { sae: 1.6, prova: null, atividade: null }, null]},
+                { id: 510, name: "KLEBER JOSÉ CORDEIRO JUNIOR", grades: [null, null, null, { sae: 3.5, prova: 2.3 }, { sae: 1.6, prova: null, atividade: null }, null]},
+                { id: 511, name: "LETÍCIA LUIZA SANTOS DE JESUS", grades: [null, null, null, { sae: 1.0, prova: null }, { sae: 0.8, prova: null, atividade: null }, null]},
+                { id: 512, name: "LUCAS GABRIEL SANTOS DA SILVA ALMEIDA", grades: [null, null, null, { sae: 2.5, prova: 8.0 }, { sae: 0.8, prova: null, atividade: null }, null]},
+                { id: 513, name: "MARIA CLARA SANTOS SILVA", grades: [null, null, null, { sae: 1.5, prova: 3.0 }, { sae: 2.5, prova: null, atividade: null }, null]},
+                { id: 514, name: "PEDRO GABRIEL DE OLIVEIRA GOIS", grades: [null, null, null, { sae: 1.0, prova: 4.5 }, { sae: 0.0, prova: null, atividade: null }, null]},
+                { id: 515, name: "RUAN NOGUEIRA NASCIMENTO", grades: [null, null, null, { sae: 2.5, prova: 5.0 }, { sae: 0.0, prova: null, atividade: null }, null]},
+                { id: 516, name: "THAYS SOPHIA SIDRONIO SILVA DOS SANTOS", grades: [null, null, null, { sae: 1.5, prova: 1.0 }, { sae: 0.8, prova: null, atividade: null }, null]},
+                { id: 517, name: "YAWAN DOS SANTOS SILVA", grades: [null, null, null, { sae: 3.5, prova: 3.5 }, { sae: 0.8, prova: null, atividade: null }, null]},
+                { id: 519, name: "YANNE BEATRIZ MEDEIROS NICOLAU DOS SANTOS", grades: [null, null, null, { sae: 2.5, prova: 4.0 }, { sae: 2.5, prova: null, atividade: null }, null]}
+            ]
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- VARIÁVEIS GLOBAIS ---
+            let studentData = {};
+            let currentClass = null;
+            let currentSearchTerm = '';
+            let currentStudentForModal = null;
+            let db, auth;
+            let currentUserId = null;
+            let unsubscribeFromFirestore = null; 
+            let geminiApiKey = localStorage.getItem('geminiApiKey') || ""; // Carrega a chave da API
+            let currentChartInstance = null; // Para o gráfico
+
+            // --- ELEMENTOS DO DOM ---
+            const appContainer = document.getElementById('app-container');
+            const authContainer = document.getElementById('auth-container');
+            const studentListEl = document.getElementById('student-list');
+            const searchInputEl = document.getElementById('search-input');
+            const classTabsEl = document.getElementById('class-tabs');
+            const classTitleEl = document.getElementById('class-title');
+            const classSummaryBtn = document.getElementById('class-summary-btn');
+            
+            const editModalEl = document.getElementById('edit-modal');
+            const editStudentNameHeaderEl = document.getElementById('edit-student-name-header');
+            const tabBtnDetails = document.getElementById('tab-btn-details');
+            const tabBtnGrades = document.getElementById('tab-btn-grades');
+            const tabContentDetails = document.getElementById('tab-content-details');
+            const tabContentGrades = document.getElementById('tab-content-grades');
+            const editStudentNameInput = document.getElementById('edit-student-name-input');
+            const editStudentClassSelect = document.getElementById('edit-student-class-select');
+            const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
+            const saveGradesBtn = document.getElementById('save-grades-btn');
+            const deleteStudentBtn = document.getElementById('delete-student-btn');
+            
+            const reportModalEl = document.getElementById('report-modal');
+            const reportContentEl = document.getElementById('report-content');
+            const closeReportModalBtn = document.getElementById('close-report-modal-btn');
+            const printReportBtn = document.getElementById('print-report-btn');
+            const aiAnalysisBtn = document.getElementById('ai-analysis-btn');
+            const aiAnalysisContainer = document.getElementById('ai-analysis-container');
+            
+            const summaryModalEl = document.getElementById('summary-modal');
+            const summaryTitleEl = document.getElementById('summary-title');
+            const summaryContentEl = document.getElementById('summary-content');
+            const closeSummaryModalBtn = document.getElementById('close-summary-modal-btn');
+
+            const settingsModalEl = document.getElementById('settings-modal');
+            const settingsBtn = document.getElementById('settings-btn');
+            const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
+            const saveSettingsBtn = document.getElementById('save-settings-btn');
+            const geminiApiKeyInput = document.getElementById('gemini-api-key-input');
+            const settingsMessage = document.getElementById('settings-message');
+
+            const addStudentModalEl = document.getElementById('add-student-modal');
+            const addStudentBtn = document.getElementById('add-student-btn');
+            const closeAddStudentModalBtn = document.getElementById('close-add-student-modal-btn');
+            const cancelAddStudentBtn = document.getElementById('cancel-add-student-btn');
+            const saveNewStudentBtn = document.getElementById('save-new-student-btn');
+            const newStudentNameInput = document.getElementById('new-student-name-input');
+            const newStudentClassSelect = document.getElementById('new-student-class-select');
+
+            const confirmDeleteModalEl = document.getElementById('confirm-delete-modal');
+            const deleteStudentNameEl = document.getElementById('delete-student-name');
+            const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            
+            const toastEl = document.getElementById('toast-notification');
+            const toastMessageEl = document.getElementById('toast-message');
+
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const logoutBtn = document.getElementById('logout-btn');
+            const authMessageEl = document.getElementById('auth-message');
+            const forgotPasswordLink = document.getElementById('forgot-password-link');
+            
+            // --- CONFIGURAÇÃO DO FIREBASE ---
+            const firebaseConfig = {
+              apiKey: "AIzaSyBOrzU01DWanKV6YbvdCX-IJqmJY-zS808",
+              authDomain: "gemini-api-609db.firebaseapp.com",
+              projectId: "gemini-api-609db",
+              storageBucket: "gemini-api-609db.appspot.com",
+              messagingSenderId: "582858271153",
+              appId: "1:582858271153:web:0f3c79fa6f856f83d1f590",
+              measurementId: "G-P2SF9FTF85"
+            };
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            } catch (e) {
+                console.error("Erro ao inicializar o Firebase. Verifique a configuração.", e);
+                document.body.innerHTML = `<div class="p-8 text-center text-red-600 bg-red-100 rounded-lg"><h1>Erro Crítico</h1><p>Não foi possível conectar ao banco de dados. Verifique a configuração do Firebase.</p></div>`;
+            }
+            
+            // --- LÓGICA DE AUTENTICAÇÃO ---
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    currentUserId = user.uid;
+                    if(authContainer) authContainer.classList.add('hidden');
+                    if(appContainer) appContainer.classList.remove('hidden');
+                    setupRealtimeListener(currentUserId);
+                } else {
+                    currentUserId = null;
+                    if(appContainer) appContainer.classList.add('hidden');
+                    if(authContainer) authContainer.classList.remove('hidden');
+                    if (unsubscribeFromFirestore) {
+                        unsubscribeFromFirestore();
+                    }
+                }
+            });
+
+            if(loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    showToast('Autenticando...', false);
+                    const email = document.getElementById('login-email').value;
+                    const password = document.getElementById('login-password').value;
+                    try {
+                        await signInWithEmailAndPassword(auth, email, password);
+                        // O onAuthStateChanged vai tratar de mostrar o app
+                    } catch (error) {
+                        console.error("Erro no login:", error.code);
+                        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                            showToast("Email ou senha inválidos.", true);
+                        } else {
+                            showToast("Ocorreu um erro ao tentar fazer login.", true);
+                        }
+                    }
+                });
+            }
+            
+            if(registerForm) {
+                registerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    showToast('Registrando...', false);
+                    const email = document.getElementById('register-email').value;
+                    const password = document.getElementById('register-password').value;
+                    
+                    let userCredential;
+                    try {
+                        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    } catch (error) {
+                        console.error("Erro de Autenticação no registro:", error.code, error.message);
+                        let msg = "Erro ao registrar. Tente novamente.";
+                        if (error.code === 'auth/weak-password') {
+                            msg = 'A senha precisa ter no mínimo 6 caracteres.';
+                        } else if (error.code === 'auth/email-already-in-use') {
+                            msg = 'Este email já está em uso por outra conta.';
+                        } else if (error.code === 'auth/invalid-email') {
+                            msg = 'O formato do email é inválido.';
+                        } else if (error.code === 'auth/operation-not-allowed') {
+                             msg = 'Login por email/senha não habilitado. Habilite no console do Firebase.';
+                        }
+                        showToast(msg, true);
+                        return; 
+                    }
+
+                    try {
+                        await initializeUserData(userCredential.user.uid);
+                        showToast('Conta criada com sucesso! Você já está logado.', false);
+                    } catch (error) {
+                        console.error("Erro de Banco de Dados no registro:", error.code, error.message);
+                        showToast("Usuário criado, mas houve um erro ao salvar os dados iniciais.", true);
+                    }
+                });
+            }
+
+            if(forgotPasswordLink) {
+                forgotPasswordLink.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('login-email').value;
+                    if (!email) {
+                        showToast('Por favor, insira seu e-mail para redefinir a senha.', true);
+                        return;
+                    }
+                    try {
+                        await sendPasswordResetEmail(auth, email);
+                        showToast('Email de redefinição de senha enviado! Verifique sua caixa de entrada.', false);
+                    } catch (error) {
+                         console.error("Erro ao enviar email de redefinição:", error.code);
+                         let msg = 'Ocorreu um erro ao enviar o e-mail.';
+                         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+                             msg = 'O e-mail informado não foi encontrado.';
+                         }
+                         showToast(msg, true);
+                    }
+                });
+            }
+            
+            if(logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await signOut(auth);
+                    showToast('Você saiu da sua conta.', false);
+                });
+            }
+
+            // --- LÓGICA DO FIRESTORE ---
+            const getDbPath = (userId) => {
+                 // Usando um caminho simples, assumindo que as regras de segurança permitirão
+                 // `schoolData/{userId}`
+                 return doc(db, 'schoolData', userId);
+             }
+
+            const initializeUserData = async (userId) => {
+                const userDocRef = getDbPath(userId);
+                const docSnap = await getDoc(userDocRef);
+                if (!docSnap.exists()) {
+                    await setDoc(userDocRef, { studentData: initialStudentData });
+                }
+            };
+
+            const setupRealtimeListener = (userId) => {
+                 const userDocRef = getDbPath(userId);
+                 unsubscribeFromFirestore = onSnapshot(userDocRef, (docSnap) => {
+                     if (docSnap.exists() && docSnap.data().studentData) {
+                         const data = docSnap.data().studentData;
+                         studentData = data;
+                        Object.values(studentData).flat().forEach(student => {
+                            student.grades.forEach((grade, index) => {
+                                if (grade) {
+                                    if(index >= 3){
+                                         grade.final = calculateUnitFinal(grade.sae, grade.prova, grade.atividade);
+                                    }
+                                }
+                            });
+                            student.overallAverage = calculateOverallAverage(student.grades);
+                        });
+                         setupClassTabs();
+                         renderStudents();
+                     } else {
+                         console.log("Documento do usuário não encontrado, inicializando...");
+                         initializeUserData(userId);
+                     }
+                 }, (error) => {
+                     console.error("Erro ao ouvir o banco de dados:", error);
+                     studentListEl.innerHTML = `<tr><td colspan="3" class="text-center p-8 text-red-500">Erro de permissão ao carregar os dados. Verifique as regras de segurança do Firestore.</td></tr>`;
+                 });
+            };
+
+            const updateFirestoreData = async () => {
+                if (!currentUserId) return;
+                const userDocRef = getDbPath(currentUserId);
+                await setDoc(userDocRef, { studentData });
+            };
+
+            // --- LÓGICA DA APLICAÇÃO ---
+            const getApiUrl = () => `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+
+            const calculateUnitFinal = (sae, prova, atividade) => {
+                const saeNum = parseFloat(sae) || 0;
+                const provaNum = parseFloat(prova) || 0;
+                const atividadeNum = parseFloat(atividade) || 0;
+                if ([sae, prova, atividade].every(v => v === null || isNaN(v))) return null;
+                const final = saeNum + provaNum + atividadeNum;
+                return Math.min(final, 10);
+            };
+
+            const calculateOverallAverage = (grades) => {
+                if (!grades) return null;
+                const validUnits = grades.filter(g => g && g.final !== null && typeof g.final !== 'undefined');
+                if (validUnits.length === 0) return null;
+                const total = validUnits.reduce((sum, g) => sum + g.final, 0);
+                return total / validUnits.length;
+            };
+
+            const getFinalGradeColor = (grade) => {
+                if (grade === null || typeof grade === 'undefined') return 'text-gray-400';
+                if (grade >= 6) return 'text-green-600';
+                if (grade >= 4) return 'text-yellow-600';
+                return 'text-red-600';
+            };
+
+            const renderStudents = () => {
+                if (!currentClass || !studentData[currentClass]) {
+                    studentListEl.innerHTML = `<tr><td colspan="3" class="text-center p-8 text-gray-500">Nenhuma turma selecionada.</td></tr>`;
+                    classTitleEl.textContent = 'Selecione uma turma para começar';
+                    classSummaryBtn.classList.add('hidden');
+                    return;
+                }
+                classSummaryBtn.classList.remove('hidden');
+                const students = studentData[currentClass]
+                    .filter(student => student.name.toLowerCase().includes(currentSearchTerm.toLowerCase()))
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                classTitleEl.textContent = `Turma ${currentClass.replace('A', 'º Ano "A"').replace('B', 'º Ano "B"')}`;
+                if (students.length === 0) {
+                    studentListEl.innerHTML = `<tr><td colspan="3" class="text-center p-8 text-gray-500">Nenhum aluno encontrado.</td></tr>`;
+                    return;
+                }
+                studentListEl.innerHTML = students.map(student => `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td class="p-4 font-medium text-gray-800">${student.name}</td>
+                        <td class="p-4 text-center">
+                            <span class="font-semibold text-lg ${getFinalGradeColor(student.overallAverage)}">
+                                ${student.overallAverage !== null ? student.overallAverage.toFixed(1) : 'N/D'}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center space-x-2">
+                            <button data-student-id="${student.id}" class="edit-btn p-2 rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition" title="Editar Aluno">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                  <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button data-student-id="${student.id}" class="report-btn p-2 rounded-lg bg-green-100 text-green-800 hover:bg-green-200 transition" title="Gerar Relatório">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>`).join('');
+            };
+
+            const openModal = (modalEl) => {
+                modalEl.classList.remove('hidden');
+                setTimeout(() => {
+                    modalEl.classList.remove('opacity-0');
+                    modalEl.querySelector('.modal-content').classList.remove('scale-95');
+                }, 10);
+            };
+
+            const closeModal = (modalEl) => {
+                modalEl.classList.add('opacity-0');
+                modalEl.querySelector('.modal-content').classList.add('scale-95');
+                setTimeout(() => { modalEl.classList.add('hidden'); }, 300);
+            };
+
+            const openEditModal = (student) => {
+                currentStudentForModal = student;
+                editStudentNameHeaderEl.textContent = student.name;
+                editStudentNameInput.value = student.name;
+                
+                // Preenche o select de turmas
+                editStudentClassSelect.innerHTML = Object.keys(studentData).map(className => 
+                    `<option value="${className}" ${className === currentClass ? 'selected' : ''}>
+                        ${className.replace('A', 'º Ano "A"').replace('B', 'º Ano "B"')}
+                    </option>`
+                ).join('');
+
+                // Preenche as notas
+                tabContentGrades.innerHTML = [1, 2, 3, 4, 5, 6].map(unitNum => {
+                    const grade = student.grades[unitNum - 1] || {};
+                    if (unitNum <= 3) {
+                        return `<div class="p-4 border rounded-lg">
+                                <h4 class="font-semibold text-md text-gray-700 mb-2">${unitNum}ª Unidade</h4>
+                                <div>
+                                    <label for="final-u${unitNum}" class="text-sm font-medium text-gray-600">Nota Final</label>
+                                    <input type="number" id="final-u${unitNum}" step="0.1" min="0" max="10" value="${grade.final ?? ''}" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                                </div>
+                            </div>`;
+                    } else {
+                        return `<div class="p-4 border rounded-lg">
+                            <h4 class="font-semibold text-md text-gray-700 mb-2">${unitNum}ª Unidade</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="sae-u${unitNum}" class="text-sm font-medium text-gray-600">SAE</label>
+                                    <input type="number" id="sae-u${unitNum}" step="0.1" min="0" max="10" value="${grade.sae ?? ''}" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label for="prova-u${unitNum}" class="text-sm font-medium text-gray-600">Prova</label>
+                                    <input type="number" id="prova-u${unitNum}" step="0.01" min="0" max="10" value="${grade.prova ?? ''}" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label for="atividade-u${unitNum}" class="text-sm font-medium text-gray-600">Atividades</label>
+                                    <input type="number" id="atividade-u${unitNum}" step="0.1" min="0" max="10" value="${grade.atividade ?? ''}" class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+                }).join('');
+                
+                // Reseta para a aba de detalhes
+                tabBtnDetails.click();
+                openModal(editModalEl);
+            };
+
+            const saveGrades = async () => {
+                const newName = editStudentNameInput.value;
+                const newClass = editStudentClassSelect.value;
+                const oldClass = currentClass;
+
+                // Encontra o aluno nos dados
+                const studentIndex = studentData[oldClass].findIndex(s => s.id === currentStudentForModal.id);
+                if (studentIndex === -1) return; // Segurança
+
+                const student = studentData[oldClass][studentIndex];
+                
+                // 1. Atualiza o nome
+                student.name = newName;
+
+                // 2. Atualiza as notas
+                for (let i = 1; i <= 6; i++) {
+                    if (i <= 3) {
+                        const finalInput = document.getElementById(`final-u${i}`);
+                        const final = finalInput.value !== '' ? parseFloat(finalInput.value) : null;
+                        student.grades[i-1] = final !== null ? { final } : null;
+                    } else {
+                        const sae = document.getElementById(`sae-u${i}`).value !== '' ? parseFloat(document.getElementById(`sae-u${i}`).value) : null;
+                        const prova = document.getElementById(`prova-u${i}`).value !== '' ? parseFloat(document.getElementById(`prova-u${i}`).value) : null;
+                        const atividade = document.getElementById(`atividade-u${i}`).value !== '' ? parseFloat(document.getElementById(`atividade-u${i}`).value) : null;
+                        
+                        if (sae !== null || prova !== null || atividade !== null) {
+                             student.grades[i-1] = {
+                                sae, prova, atividade,
+                                final: calculateUnitFinal(sae, prova, atividade)
+                            };
+                        } else {
+                            student.grades[i-1] = null;
+                        }
+                    }
+                }
+                
+                // 3. Move o aluno se a turma mudou
+                if (newClass !== oldClass) {
+                    const [studentToMove] = studentData[oldClass].splice(studentIndex, 1);
+                    studentData[newClass].push(studentToMove);
+                }
+
+                await updateFirestoreData(); // Salva no Firebase
+                showToast("Alterações salvas com sucesso!", false);
+                renderStudents(); // Re-renderiza a turma atual (aluno pode desaparecer se movido)
+                closeModal(editModalEl);
+            };
+
+            const openReportModal = (student) => {
+                currentStudentForModal = student;
+                let reportHTML = `<p class="mb-4"><strong>Aluno(a):</strong> ${student.name}</p>`;
+                reportHTML += `<p class="mb-2"><strong>Turma:</strong> ${currentClass.replace('A', 'º Ano "A"').replace('B', 'º Ano "B"')}</p><hr class="my-4">`;
+                reportHTML += `<h3 class="font-semibold text-lg text-gray-800 mb-2">Resumo das Notas</h3>`;
+                const gradesHTML = student.grades.map((g, i) => g && g.final !== null && typeof g.final !== 'undefined' ? `<li><strong>${i+1}ª Unidade:</strong> Nota ${g.final.toFixed(1)}</li>` : `<li><strong>${i+1}ª Unidade:</strong> N/D</li>`).join('');
+                reportHTML += `<ul class="list-disc list-inside mb-4">${gradesHTML}</ul>`;
+                reportHTML += `<p class="text-center font-bold text-lg ${getFinalGradeColor(student.overallAverage)}">Média Final: ${student.overallAverage !== null ? student.overallAverage.toFixed(1) : 'N/D'}</p>`;
+                reportContentEl.innerHTML = reportHTML;
+                
+                aiAnalysisContainer.style.display = 'none';
+                aiAnalysisContainer.innerHTML = '';
+                document.querySelectorAll('#qualitative-assessment input[type="radio"]').forEach(r => r.checked = false);
+                document.getElementById('observations').value = '';
+                printReportBtn.disabled = true;
+
+                openModal(reportModalEl);
+            };
+
+            const checkApiKey = (showError = true) => {
+                if (!geminiApiKey) {
+                    if (showError && settingsMessage) {
+                        settingsMessage.textContent = "Por favor, insira sua Chave da API do Gemini para usar esta funcionalidade.";
+                        settingsMessage.classList.remove('hidden');
+                        openModal(settingsModalEl);
+                    }
+                    return false;
+                }
+                if (settingsMessage) settingsMessage.classList.add('hidden');
+                return true;
+            };
+            
+            const handleApiError = (error, container) => {
+                 console.error("Gemini API Error:", error);
+                 if (error.message.includes('400')) {
+                     container.innerHTML = '<p class="text-red-500">Erro na API: A Chave da API do Gemini é inválida ou está faltando. Verifique em Configurações.</p>';
+                 } else {
+                     container.innerHTML = '<p class="text-red-500">Erro ao gerar a análise. Verifique sua conexão ou a Chave da API.</p>';
+                 }
+            }
+
+            const generateAIAnalysis = async () => {
+                if (!currentStudentForModal || !checkApiKey()) return;
+
+                aiAnalysisContainer.style.display = 'block';
+                aiAnalysisContainer.innerHTML = '<div class="loader"></div>';
+                aiAnalysisBtn.disabled = true;
+
+                const student = currentStudentForModal;
+                const qualitativeData = {
+                    participation: document.querySelector('input[name="participation"]:checked')?.value || 'Não informado',
+                    homework: document.querySelector('input[name="homework"]:checked')?.value || 'Não informado',
+                    behavior: document.querySelector('input[name="behavior"]:checked')?.value || 'Não informado',
+                    interest: document.querySelector('input[name="interest"]:checked')?.value || 'Não informado',
+                    observations: document.getElementById('observations').value || 'Nenhuma.',
+                };
+                
+                const prompt = `
+                    Você é um especialista em psicopedagogia e sua tarefa é criar uma análise técnica e objetiva sobre o perfil de aprendizagem do(a) aluno(a) ${student.name}, para uso interno do professor e da coordenação pedagógica. Não se dirija ao aluno ou aos pais. A análise deve ser estruturada e organizada.
+
+                    Dados Quantitativos:
+                    - ${student.grades.map((g, i) => g && g.final !== null ? `Nota da ${i+1}ª unidade: ${g.final.toFixed(1)}` : `Nota da ${i+1}ª unidade: Não lançada`).join('\n- ')}
+                    - Média Final: ${student.overallAverage !== null ? student.overallAverage.toFixed(1) : 'N/A'}
+                    - A média para aprovação é 6.0.
+
+                    Avaliação Qualitativa do Professor:
+                    - Participação em aula: ${qualitativeData.participation}
+                    - Entrega de tarefas: ${qualitativeData.homework}
+                    - Comportamento em sala: ${qualitativeData.behavior}
+                    - Interesse pela matéria: ${qualitativeData.interest}
+                    - Observações adicionais: ${qualitativeData.observations}
+
+                    Com base nesses dados, gere um relatório estruturado nos seguintes tópicos:
+
+                    Análise Pedagógica
+
+                    Pontos Fortes:
+                    (Descreva aqui as qualidades observadas, como consistência nas notas, bom comportamento, participação, etc.)
+
+                    Pontos de Atenção:
+                    (Descreva aqui as áreas que necessitam de desenvolvimento, como oscilação de notas, dificuldades em tarefas, comportamento, etc.)
+
+                    Sugestões Pedagógicas:
+                    (Apresente aqui estratégias e intervenções que o professor pode aplicar para auxiliar o aluno a melhorar nos pontos de atenção.)
+                `;
+
+                try {
+                    const response = await fetch(getApiUrl(), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if(text){
+                         let cleanedText = text.replace(/Pontos Fortes:|Pontos de Atenção:|Sugestões Pedagógicas:|Análise Pedagógica/gi, '').trim();
+                        let sections = cleanedText.split(/\n\s*\n/);
+                        let html = '<strong>Análise Pedagógica</strong>';
+                        if (sections.length >= 3) {
+                             html += `<br><br><strong>Pontos Fortes:</strong><br>${sections[0].trim()}`;
+                             html += `<br><br><strong>Pontos de Atenção:</strong><br>${sections[1].trim()}`;
+                             html += `<br><br><strong>Sugestões Pedagógicas:</strong><br>${sections[2].trim()}`;
+                        } else {
+                            html = text.replace(/\n/g, '<br>');
+                        }
+                        aiAnalysisContainer.innerHTML = html;
+                        printReportBtn.disabled = false;
+                    } else {
+                        aiAnalysisContainer.innerHTML = '<p class="text-red-500">Não foi possível gerar a análise.</p>';
+                    }
+                } catch (error) {
+                    handleApiError(error, aiAnalysisContainer);
+                } finally {
+                    aiAnalysisBtn.disabled = false;
+                }
+            };
+            
+             const openSummaryModal = async () => {
+                if (!checkApiKey()) return;
+                
+                summaryTitleEl.textContent = `Resumo da Turma ${currentClass.replace('A', 'º Ano "A"').replace('B', 'º Ano "B"')}`;
+                openModal(summaryModalEl);
+                summaryContentEl.innerHTML = '<div class="loader"></div> <canvas id="grade-chart" class="my-4"></canvas>';
+
+                const students = studentData[currentClass];
+                const studentDataForPrompt = students.map(s => ({
+                    nome: s.name,
+                    mediaFinal: s.overallAverage?.toFixed(1) || 'N/A'
+                }));
+
+                // Gerar Gráfico
+                renderGradeChart(students);
+
+                const prompt = `
+                    Você é um coordenador pedagógico experiente analisando o desempenho da turma ${currentClass}. Sua tarefa é fornecer um resumo coeso e prático para o professor da turma.
+
+                    Dados da Turma (Nome e Média Final):
+                    ${JSON.stringify(studentDataForPrompt, null, 2)}
+
+                    Análise Requerida:
+                    Baseado nos dados (média para aprovação é 6.0), gere um relatório para o professor. Use uma linguagem clara e profissional. Formate a resposta usando tags HTML: use <h3> para os títulos, <p> para parágrafos, <ul> e <li> para listas. Não use <br>.
+
+                    O relatório deve conter as seguintes seções:
+
+                    <h3>Desempenho Geral da Turma</h3>
+                    <p>Faça uma avaliação geral. Calcule e informe a porcentagem de alunos aprovados (média >= 6.0).</p>
+
+                    <h3>Destaques Positivos</h3>
+                    <p>Liste os alunos com desempenho consistentemente alto (média >= 8.5).</p>
+
+                    <h3>Pontos de Atenção</h3>
+                    <p>Liste os alunos que estão com a média final abaixo de 6.0 e que requerem atenção especial.</p>
+
+                    <h3>Sugestões Práticas</h3>
+                    <p>Com base na análise, sugira 1 ou 2 ações que o professor pode tomar.</p>
+                `;
+
+                 try {
+                    const response = await fetch(getApiUrl(), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if(text){
+                        summaryContentEl.innerHTML = text + summaryContentEl.innerHTML; // Adiciona o texto antes do canvas
+                    } else {
+                        summaryContentEl.innerHTML = '<p class="text-red-500">Não foi possível gerar o resumo.</p>';
+                    }
+                } catch (error) {
+                    handleApiError(error, summaryContentEl);
+                }
+            };
+            
+            const renderGradeChart = (students) => {
+                const ctx = document.getElementById('grade-chart');
+                if (!ctx) return;
+                
+                if (currentChartInstance) {
+                    currentChartInstance.destroy(); // Destrói o gráfico anterior
+                }
+
+                const grades = students.map(s => s.overallAverage).filter(g => g !== null && typeof g !== 'undefined');
+                const belowAverage = grades.filter(g => g < 6.0).length;
+                const onAverage = grades.filter(g => g >= 6.0 && g < 8.0).length;
+                const aboveAverage = grades.filter(g => g >= 8.0).length;
+
+                currentChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Abaixo da Média (< 6.0)', 'Na Média (6.0 - 7.9)', 'Acima da Média (8.0+)'],
+                        datasets: [{
+                            label: 'Nº de Alunos',
+                            data: [belowAverage, onAverage, aboveAverage],
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.6)',  // red-500
+                                'rgba(234, 179, 8, 0.6)',  // yellow-500
+                                'rgba(34, 197, 94, 0.6)'  // green-500
+                            ],
+                            borderColor: [
+                                'rgba(239, 68, 68, 1)',
+                                'rgba(234, 179, 8, 1)',
+                                'rgba(34, 197, 94, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                allowDecimals: false
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Distribuição de Notas da Turma',
+                                font: {
+                                    size: 16
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const openAddStudentModal = () => {
+                newStudentNameInput.value = '';
+                newStudentClassSelect.innerHTML = Object.keys(studentData).map(className => 
+                    `<option value="${className}" ${className === currentClass ? 'selected' : ''}>
+                        ${className.replace('A', 'º Ano "A"').replace('B', 'º Ano "B"')}
+                    </option>`
+                ).join('');
+                openModal(addStudentModalEl);
+            };
+            
+            const saveNewStudent = async () => {
+                const newName = newStudentNameInput.value.trim().toUpperCase();
+                const selectedClass = newStudentClassSelect.value;
+                if (!newName) {
+                    showToast("O nome do aluno não pode estar vazio.", true);
+                    return;
+                }
+                
+                const newStudent = {
+                    id: Date.now(), // ID simples baseado no timestamp
+                    name: newName,
+                    grades: [null, null, null, null, null, null] // Array de 6 unidades
+                };
+                
+                studentData[selectedClass].push(newStudent);
+                await updateFirestoreData();
+                showToast("Aluno adicionado com sucesso!", false);
+                
+                // Se o aluno foi adicionado na turma atual, atualiza a lista
+                if(selectedClass === currentClass) {
+                    renderStudents();
+                }
+                closeModal(addStudentModalEl);
+            };
+            
+            const openDeleteConfirmation = () => {
+                deleteStudentNameEl.textContent = currentStudentForModal.name;
+                openModal(confirmDeleteModalEl);
+            };
+
+            const deleteStudent = async () => {
+                const studentIndex = studentData[currentClass].findIndex(s => s.id === currentStudentForModal.id);
+                if (studentIndex > -1) {
+                    studentData[currentClass].splice(studentIndex, 1);
+                    await updateFirestoreData();
+                    showToast("Aluno excluído com sucesso.", false);
+                    renderStudents();
+                    closeModal(confirmDeleteModalEl);
+                    closeModal(editModalEl);
+                } else {
+                    showToast("Erro: Aluno não encontrado.", true);
+                }
+            };
+            
+            const showToast = (message, isError = false) => {
+                toastMessageEl.textContent = message;
+                toastEl.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-all duration-300 ${isError ? 'bg-red-600' : 'bg-green-600'}`;
+                
+                toastEl.classList.remove('hidden', 'opacity-0', 'translate-x-10');
+                
+                setTimeout(() => {
+                    toastEl.classList.add('opacity-0', 'translate-x-10');
+                    setTimeout(() => {
+                        toastEl.classList.add('hidden');
+                    }, 500); // Espera a transição de fade-out
+                }, 3000); // Tempo que o toast fica visível
+            };
+
+            const classColors = {
+                "6A": "bg-blue-500 hover:bg-blue-600",
+                "7A": "bg-teal-500 hover:bg-teal-600",
+                "8A": "bg-purple-500 hover:bg-purple-600",
+                "9A": "bg-pink-500 hover:bg-pink-600",
+                "9B": "bg-indigo-500 hover:bg-indigo-600"
+            };
+            
+            const setupClassTabs = () => {
+                const classNames = Object.keys(studentData);
+                classTabsEl.innerHTML = classNames.map(name => `
+                    <button data-class="${name}" class="class-tab px-4 py-2 rounded-lg text-white font-semibold transition shadow-md ${classColors[name]} transform hover:scale-105 hover:shadow-lg">
+                        ${name.replace('A', 'º Ano "A"').replace('B', 'º Ano "B"')}
+                    </button>
+                `).join('');
+                
+                classTabsEl.addEventListener('click', (e) => {
+                    if(e.target.matches('.class-tab')) {
+                        currentClass = e.target.dataset.class;
+                        document.querySelectorAll('.class-tab').forEach(t => t.classList.remove('active-tab'));
+                        e.target.classList.add('active-tab');
+                        renderStudents();
+                    }
+                });
+            };
+
+            // --- Event Listeners Globais ---
+            searchInputEl.addEventListener('keyup', (e) => { currentSearchTerm = e.target.value; renderStudents(); });
+            
+            studentListEl.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+                const studentId = button.dataset.studentId;
+                const student = studentData[currentClass].find(s => s.id == studentId);
+                if (button.matches('.edit-btn')) openEditModal(student);
+                if (button.matches('.report-btn')) openReportModal(student);
+            });
+
+            // Listeners do Modal de Edição
+            saveGradesBtn.addEventListener('click', saveGrades);
+            closeEditModalBtn.addEventListener('click', () => closeModal(editModalEl));
+            deleteStudentBtn.addEventListener('click', openDeleteConfirmation);
+            tabBtnDetails.addEventListener('click', () => {
+                tabContentDetails.classList.remove('hidden');
+                tabContentGrades.classList.add('hidden');
+                tabBtnDetails.classList.add('active-tab-button');
+                tabBtnDetails.classList.remove('inactive-tab-button');
+                tabBtnGrades.classList.add('inactive-tab-button');
+                tabBtnGrades.classList.remove('active-tab-button');
+            });
+            tabBtnGrades.addEventListener('click', () => {
+                tabContentDetails.classList.add('hidden');
+                tabContentGrades.classList.remove('hidden');
+                tabBtnGrades.classList.add('active-tab-button');
+                tabBtnGrades.classList.remove('inactive-tab-button');
+                tabBtnDetails.classList.add('inactive-tab-button');
+                tabBtnDetails.classList.remove('active-tab-button');
+            });
+
+            // Listeners do Modal de Relatório
+            closeReportModalBtn.addEventListener('click', () => closeModal(reportModalEl));
+            aiAnalysisBtn.addEventListener('click', generateAIAnalysis);
+            printReportBtn.addEventListener('click', () => {
+                const title = "Relatório Pedagógico do Aluno"
+                const printContent = document.getElementById('report-content').innerHTML + document.getElementById('ai-analysis-container').innerHTML;
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`<html><head><title>${title}</title><script src="https://cdn.tailwindcss.com"><\/script><style>body { font-family: 'Inter', sans-serif; padding: 2rem; } #ai-analysis-container { margin-top: 1.5rem; padding: 1rem; border-radius: 0.5rem; } .loader { display: none; }</style></head><body><h1 class="text-2xl font-bold mb-4">${title}</h1>${printContent}</body></html>`);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+            });
+
+            // Listeners do Modal de Resumo da Turma
+            classSummaryBtn.addEventListener('click', openSummaryModal);
+            closeSummaryModalBtn.addEventListener('click', () => closeModal(summaryModalEl));
+
+             // Listeners do Modal de Configurações
+            settingsBtn.addEventListener('click', () => {
+                geminiApiKeyInput.value = geminiApiKey;
+                openModal(settingsModalEl);
+            });
+            closeSettingsModalBtn.addEventListener('click', () => closeModal(settingsModalEl));
+            saveSettingsBtn.addEventListener('click', () => {
+                geminiApiKey = geminiApiKeyInput.value;
+                localStorage.setItem('geminiApiKey', geminiApiKey);
+                if (settingsMessage) settingsMessage.classList.add('hidden');
+                showToast("Chave de API salva!", false);
+                closeModal(settingsModalEl);
+            });
+
+            // Listeners do Modal Adicionar Aluno
+            addStudentBtn.addEventListener('click', openAddStudentModal);
+            closeAddStudentModalBtn.addEventListener('click', () => closeModal(addStudentModalEl));
+            cancelAddStudentBtn.addEventListener('click', () => closeModal(addStudentModalEl));
+            saveNewStudentBtn.addEventListener('click', saveNewStudent);
+
+            // Listeners do Modal de Exclusão
+            cancelDeleteBtn.addEventListener('click', () => closeModal(confirmDeleteModalEl));
+            confirmDeleteBtn.addEventListener('click', deleteStudent);
+        });
+    </script>
+</body>
+</html>
