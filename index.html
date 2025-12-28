@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RadLot PRO | Inteligência Preditiva</title>
+    <title>RadLot PRO | Sistema de Gestão Maker</title>
     
-    <!-- Frameworks e Bibliotecas -->
+    <!-- Bibliotecas Core -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,50 +13,38 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap');
         body { 
             font-family: 'Inter', sans-serif; 
             background-color: #020617; 
             color: #f8fafc; 
             margin: 0; 
-            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
         }
         
-        /* Visibilidade Total dos Caracteres - Letras Brancas */
-        input, select, textarea {
+        /* Visibilidade dos Inputs */
+        input, select {
             color: #ffffff !important;
-            background-color: rgba(30, 41, 59, 0.6) !important;
+            background-color: rgba(30, 41, 59, 0.7) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
-        input:focus {
-            border-color: #10b981 !important;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-            outline: none;
         }
         
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .icon-wrapper { display: inline-flex; align-items: center; justify-content: center; }
-        
-        .ai-gradient {
-            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .icon-container svg { display: inline-block; vertical-align: middle; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <!-- Integração Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, setDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCqTWx5laCDp4jrySVXz_0kt43sOscPogo",
@@ -71,23 +59,22 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.RadLotCore = {
+        window.RadCore = {
             auth, db,
-            api: { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider },
-            dbOps: { collection, addDoc, setDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs }
+            api: { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider },
+            dbOps: { collection, addDoc, setDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp }
         };
     </script>
 
-    <!-- Lógica React -->
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
         const MODS = {
-            mega: { n: 'Mega-Sena', api: 'megasena', max: 60, k: 6, color: '#10b981', hot: [10, 53, 5, 4, 33, 23, 27, 30] },
-            facil: { n: 'Lotofácil', api: 'lotofacil', max: 25, k: 15, color: '#a855f7', hot: [20, 11, 10, 13, 24, 25, 14] },
-            quina: { n: 'Quina', api: 'quina', max: 80, k: 5, color: '#3b82f6', hot: [4, 49, 31, 39, 52, 16, 18] },
-            timemania: { n: 'Timemania', api: 'timemania', max: 80, k: 10, color: '#eab308', hot: [20, 71, 80, 4, 6, 70, 72] },
-            sorte: { n: 'Dia de Sorte', api: 'diadesorte', max: 31, k: 7, color: '#f97316', hot: [10, 7, 23, 31, 9, 21, 15] }
+            mega: { n: 'Mega-Sena', api: 'megasena', max: 60, k: 6, color: '#10b981', hot: [10, 53, 5, 4, 33, 23, 27, 30, 37, 42] },
+            facil: { n: 'Lotofácil', api: 'lotofacil', max: 25, k: 15, color: '#a855f7', hot: [20, 11, 10, 13, 24, 25, 14, 3, 4, 12] },
+            quina: { n: 'Quina', api: 'quina', max: 80, k: 5, color: '#3b82f6', hot: [4, 49, 31, 39, 52, 16, 18, 53, 10, 38] },
+            timemania: { n: 'Timemania', api: 'timemania', max: 80, k: 10, color: '#eab308', hot: [20, 71, 80, 4, 6, 70, 72, 60, 21, 25] },
+            sorte: { n: 'Dia de Sorte', api: 'diadesorte', max: 31, k: 7, color: '#f97316', hot: [10, 7, 23, 31, 9, 21, 15, 1, 14, 8] }
         };
 
         const Icon = ({ name, className = "w-5 h-5" }) => {
@@ -98,70 +85,65 @@
                     window.lucide.createIcons();
                 }
             }, [name, className]);
-            return <span ref={iconRef} className="icon-wrapper"></span>;
-        };
-
-        const apiKey = ""; // Chave automática fornecida pelo ambiente
-
-        const callGemini = async (prompt, systemInstruction = "") => {
-            let delay = 1000;
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            
-            for (let i = 0; i < 5; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            systemInstruction: { parts: [{ text: systemInstruction }] }
-                        })
-                    });
-                    
-                    if (!response.ok) throw new Error(`Status ${response.status}`);
-                    const result = await response.json();
-                    return result.candidates?.[0]?.content?.parts?.[0]?.text || "Falha na análise técnica.";
-                } catch (e) {
-                    if (i === 4) throw e;
-                    await new Promise(res => setTimeout(res, delay));
-                    delay *= 2;
-                }
-            }
+            return <span ref={iconRef} className="icon-container"></span>;
         };
 
         const App = () => {
             const [user, setUser] = useState(null);
             const [profile, setProfile] = useState(null);
-            const [isReady, setIsReady] = useState(false);
-            const [view, setView] = useState('login');
+            const [init, setInit] = useState(false);
             const [tab, setTab] = useState('gerador');
-            const [activeLotto, setActiveLotto] = useState('mega');
+            const [lotto, setLotto] = useState('mega');
             const [game, setGame] = useState(null);
             const [vault, setVault] = useState([]);
-            const [apiData, setApiData] = useState({});
+            const [view, setView] = useState('login');
+            const [busy, setBusy] = useState(false);
             const [msg, setMsg] = useState({ type: '', text: '' });
-            const [isBusy, setIsBusy] = useState(false);
-            const [showMapHelp, setShowMapHelp] = useState(false);
-            
-            const [aiAnalysis, setAiAnalysis] = useState("");
-            const [aiDicaDia, setAiDicaDia] = useState("");
-            const [isAiLoading, setIsAiLoading] = useState(false);
+            const [timer, setTimer] = useState(300); // 5 minutos em segundos
 
-            const [authForm, setAuthForm] = useState({ id: '', email: '', cEmail: '', pass: '', cPass: '', nome: '', apelido: '', tel: '', cTel: '', nascimento: '', sexo: 'masculino' });
+            const [authForm, setAuthForm] = useState({ id: '', pass: '', nome: '', apelido: '', tel: '', email: '', passReg: '', sexo: 'masculino' });
+            const [apiData, setApiData] = useState({});
+
+            // Sistema de Inatividade
+            useEffect(() => {
+                if (!user) return;
+                const countdown = setInterval(() => {
+                    setTimer(prev => {
+                        if (prev <= 1) {
+                            window.RadCore.api.signOut(window.RadCore.auth);
+                            return 300;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+
+                const resetTimer = () => setTimer(300);
+                window.addEventListener('mousemove', resetTimer);
+                window.addEventListener('keydown', resetTimer);
+                window.addEventListener('click', resetTimer);
+
+                return () => {
+                    clearInterval(countdown);
+                    window.removeEventListener('mousemove', resetTimer);
+                    window.removeEventListener('keydown', resetTimer);
+                    window.removeEventListener('click', resetTimer);
+                };
+            }, [user]);
 
             useEffect(() => {
-                const checkFB = setInterval(() => {
-                    if (window.RadLotCore) {
-                        clearInterval(checkFB);
-                        window.RadLotCore.api.onAuthStateChanged(window.RadLotCore.auth, async (u) => {
+                const check = setInterval(() => {
+                    if (window.RadCore) {
+                        clearInterval(check);
+                        window.RadCore.api.onAuthStateChanged(window.RadCore.auth, async (u) => {
                             if (u) {
+                                const snap = await window.RadCore.dbOps.getDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', u.uid, 'profile', 'data'));
+                                if (snap.exists()) setProfile(snap.data());
                                 setUser(u);
-                                try {
-                                    const snap = await window.RadLotCore.dbOps.getDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'users', u.uid, 'profile', 'data'));
-                                    if (snap.exists()) setProfile(snap.data());
-                                } catch (e) {}
-                            } else { setUser(null); setProfile(null); }
-                            setIsReady(true);
+                            } else {
+                                setUser(null);
+                                setProfile(null);
+                            }
+                            setInit(true);
                         });
                     }
                 }, 100);
@@ -169,38 +151,36 @@
 
             useEffect(() => {
                 if (!user) return;
-                const q = window.RadLotCore.dbOps.collection(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault');
-                return window.RadLotCore.dbOps.onSnapshot(q, (s) => setVault(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+                const q = window.RadCore.dbOps.collection(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault');
+                return window.RadCore.dbOps.onSnapshot(q, (s) => setVault(s.docs.map(d => ({ id: d.id, ...d.data() }))));
             }, [user]);
 
             const handleAuth = async (e) => {
                 e.preventDefault();
                 setMsg({ type: '', text: '' });
-                setIsBusy(true);
+                setBusy(true);
                 try {
                     if (view === 'register') {
-                        if (authForm.pass !== authForm.cPass) throw new Error("Senhas não coincidem.");
-                        const uc = await window.RadLotCore.api.createUserWithEmailAndPassword(window.RadLotCore.auth, authForm.email, authForm.pass);
-                        const data = { nome: authForm.nome, apelido: authForm.apelido, telefone: authForm.tel, nascimento: authForm.nascimento, sexo: authForm.sexo, email: authForm.email, createdAt: window.RadLotCore.dbOps.serverTimestamp() };
-                        await window.RadLotCore.dbOps.setDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'users', uc.user.uid, 'profile', 'data'), data);
-                        await window.RadLotCore.dbOps.setDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', authForm.apelido.toLowerCase()), { email: authForm.email });
+                        const uc = await window.RadCore.api.createUserWithEmailAndPassword(window.RadCore.auth, authForm.email, authForm.passReg);
+                        const pData = { nome: authForm.nome, apelido: authForm.apelido, telefone: authForm.tel, email: authForm.email, sexo: authForm.sexo, createdAt: window.RadCore.dbOps.serverTimestamp() };
+                        await window.RadCore.dbOps.setDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', uc.user.uid, 'profile', 'data'), pData);
+                        await window.RadCore.dbOps.setDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', authForm.apelido.toLowerCase()), { email: authForm.email });
                     } else if (view === 'login') {
                         let email = authForm.id;
                         if (!email.includes('@')) {
-                            const snap = await window.RadLotCore.dbOps.getDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', email.toLowerCase()));
+                            const snap = await window.RadCore.dbOps.getDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', email.toLowerCase()));
                             if (snap.exists()) email = snap.data().email;
-                            else throw new Error("Usuário não encontrado.");
+                            else throw new Error("Credenciais não localizadas.");
                         }
-                        await window.RadLotCore.api.signInWithEmailAndPassword(window.RadLotCore.auth, email, authForm.pass);
+                        await window.RadCore.api.signInWithEmailAndPassword(window.RadCore.auth, email, authForm.pass);
                     }
-                } catch (err) { setMsg({ type: 'error', text: "Erro: Verifique os seus dados de acesso." }); }
-                setIsBusy(false);
+                } catch (err) { setMsg({ type: 'error', text: "Erro: Acesso negado. Verifique os dados." }); }
+                setBusy(false);
             };
 
-            const runGenerator = () => {
-                setIsBusy(true);
-                setAiAnalysis("");
-                const cfg = MODS[activeLotto];
+            const generate = () => {
+                setBusy(true);
+                const cfg = MODS[lotto];
                 setTimeout(() => {
                     let pool = [];
                     cfg.hot.forEach(n => { for(let i=0; i<15; i++) pool.push(n); });
@@ -211,91 +191,72 @@
                         if(!res.includes(n)) res.push(n);
                     }
                     setGame(res.sort((a,b)=>a-b));
-                    setIsBusy(false);
+                    setBusy(false);
                 }, 600);
             };
 
-            const analyzeWithAI = async () => {
-                if (!game) return;
-                setIsAiLoading(true);
-                try {
-                    const prompt = `Analise estatisticamente estes números gerados para a ${MODS[activeLotto].n}: ${game.join(', ')}. Forneça uma análise técnica rápida sobre paridade, soma e dispersão. Seja direto e utilize português do Brasil.`;
-                    const systemInstruction = "Você é um especialista sênior em análise estatística de loterias brasileiras.";
-                    const response = await callGemini(prompt, systemInstruction);
-                    setAiAnalysis(response);
-                } catch (e) { setMsg({ type: 'error', text: "Serviço de IA Gemini indisponível no momento." }); }
-                setIsAiLoading(false);
-            };
-
-            const getLuckyTip = async () => {
-                setIsAiLoading(true);
-                try {
-                    const prompt = `Gere uma frase de motivação curta e 3 dezenas da sorte para hoje para o usuário ${profile?.apelido}, nascido em ${profile?.nascimento}.`;
-                    const systemInstruction = "Você é o Oráculo do RadLot PRO. Forneça conselhos baseados em numerologia e probabilidade.";
-                    const response = await callGemini(prompt, systemInstruction);
-                    setAiDicaDia(response);
-                } catch (e) {}
-                setIsAiLoading(false);
-            };
-
             const saveGame = async () => {
-                if(!user || !game) return;
-                const p = game.filter(n=>n%2===0).length;
-                await window.RadLotCore.dbOps.addDoc(window.RadLotCore.dbOps.collection(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault'), {
-                    tipo: activeLotto, numeros: game, stats: { pares: p, impares: game.length-p, soma: game.reduce((a,b)=>a+b,0) }, criadoEm: window.RadLotCore.dbOps.serverTimestamp()
+                if (!user || !game) return;
+                const p = game.filter(n => n % 2 === 0).length;
+                await window.RadCore.dbOps.addDoc(window.RadCore.dbOps.collection(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault'), {
+                    tipo: lotto, numeros: game, stats: { pares: p, impares: game.length-p, soma: game.reduce((a,b)=>a+b,0) }, criadoEm: window.RadCore.dbOps.serverTimestamp()
                 });
                 setGame(null);
             };
 
-            if (!isReady) return (
-                <div className="min-h-screen flex items-center justify-center bg-[#020617] text-emerald-500">
-                    <div className="text-center space-y-4">
-                        <Icon name="refresh-cw" className="w-12 h-12 animate-spin" />
-                        <p className="font-black uppercase tracking-[0.3em] text-[10px]">Sincronizando Sistema...</p>
-                    </div>
-                </div>
-            );
+            const syncOfficial = async () => {
+                setBusy(true);
+                try {
+                    const r = await fetch(`https://loteriascaixa-api.herokuapp.com/api/${MODS[lotto].api}/latest`);
+                    const d = await r.json();
+                    setApiData(prev => ({ ...prev, [lotto]: d }));
+                } catch (e) {}
+                setBusy(false);
+            };
+
+            const formatTimer = (s) => {
+                const min = Math.floor(s / 60);
+                const sec = s % 60;
+                return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+            };
+
+            if (!init) return <div className="min-h-screen flex items-center justify-center bg-[#020617]"><Icon name="refresh-cw" className="w-12 h-12 animate-spin text-emerald-500" /></div>;
 
             if (!user) return (
                 <div className="min-h-screen flex items-center justify-center p-4 bg-[#020617]">
-                    <div className="w-full max-w-xl bg-[#090e1a] border border-white/5 p-8 md:p-12 rounded-[3.5rem] shadow-2xl overflow-y-auto max-h-[95vh] custom-scrollbar">
-                        <div className="flex flex-col items-center gap-6 mb-12 text-center">
-                            <div className="p-6 bg-emerald-500 rounded-[2rem] text-black shadow-lg"><Icon name="clover" className="w-10 h-10" /></div>
-                            <h1 className="text-4xl font-black italic tracking-tighter text-white uppercase leading-none">RADLOT <span className="text-emerald-500 not-italic text-2xl align-top">PRO</span></h1>
+                    <div className="w-full max-w-xl bg-[#090e1a] border border-white/5 p-10 rounded-[3rem] shadow-2xl">
+                        <div className="text-center mb-10">
+                            <div className="p-5 bg-emerald-500 rounded-2xl w-fit mx-auto mb-6 text-black"><Icon name="clover" className="w-10 h-10" /></div>
+                            <h1 className="text-4xl font-extrabold uppercase italic tracking-tighter">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
                         </div>
                         <form onSubmit={handleAuth} className="space-y-6">
                             {view === 'register' ? (
-                                <div className="space-y-5 fade-in">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1">Nome Completo</label><input type="text" onChange={e=>setAuthForm({...authForm, nome:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
-                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1">Apelido (Login)</label><input type="text" onChange={e=>setAuthForm({...authForm, apelido:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
+                                <div className="space-y-4 fade-in">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="text" placeholder="Nome Completo" onChange={e=>setAuthForm({...authForm, nome:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
+                                        <input type="text" placeholder="Apelido" onChange={e=>setAuthForm({...authForm, apelido:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1">Nascimento</label><input type="date" onChange={e=>setAuthForm({...authForm, nascimento:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
-                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1">Gênero</label>
-                                            <select onChange={e=>setAuthForm({...authForm, sexo:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none">
-                                                <option value="masculino">Masculino</option>
-                                                <option value="feminino">Feminino</option>
-                                            </select>
-                                        </div>
+                                        <input type="tel" placeholder="Telefone" onChange={e=>setAuthForm({...authForm, tel:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
+                                        <select onChange={e=>setAuthForm({...authForm, sexo:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none">
+                                            <option value="masculino">Masculino</option>
+                                            <option value="feminino">Feminino</option>
+                                        </select>
                                     </div>
-                                    <input type="tel" placeholder="Telefone: (00) 00000-0000" onChange={e=>setAuthForm({...authForm, tel:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required />
-                                    <input type="email" placeholder="E-mail profissional" onChange={e=>setAuthForm({...authForm, email:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required />
-                                    <input type="email" placeholder="Confirmar E-mail" onChange={e=>setAuthForm({...authForm, cEmail:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input type="password" placeholder="Senha" onChange={e=>setAuthForm({...authForm, pass:e.target.value})} className="w-full rounded-xl py-4 px-6 outline-none" required />
-                                        <input type="password" placeholder="Confirmar" onChange={e=>setAuthForm({...authForm, cPass:e.target.value})} className="w-full rounded-xl py-4 px-6 outline-none" required />
-                                    </div>
+                                    <input type="email" placeholder="E-mail" onChange={e=>setAuthForm({...authForm, email:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
+                                    <input type="password" placeholder="Senha" onChange={e=>setAuthForm({...authForm, passReg:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
                                 </div>
                             ) : (
-                                <div className="space-y-5 fade-in text-white font-black">
-                                    <div className="space-y-2"><label className="text-[10px] uppercase font-black text-slate-500 ml-1">E-mail ou Apelido</label><input type="text" onChange={e=>setAuthForm({...authForm, id:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none font-bold text-lg" required /></div>
-                                    <div className="space-y-2"><label className="text-[10px] uppercase font-black text-slate-500 ml-1">Senha de Acesso</label><input type="password" onChange={e=>setAuthForm({...authForm, pass:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none font-bold text-lg" required /></div>
+                                <div className="space-y-4 fade-in">
+                                    <input type="text" placeholder="E-mail ou Apelido" onChange={e=>setAuthForm({...authForm, id:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg" required />
+                                    <input type="password" placeholder="Senha" onChange={e=>setAuthForm({...authForm, pass:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg" required />
                                 </div>
                             )}
-                            {msg.text && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase text-center rounded-xl">{msg.text}</div>}
-                            <button type="submit" disabled={isBusy} className="w-full bg-emerald-600 hover:bg-emerald-500 py-6 rounded-3xl font-black uppercase text-sm tracking-widest text-black shadow-xl active:scale-95 transition-all">ACESSAR SISTEMA</button>
-                            <div className="text-center pt-4 border-t border-white/5"><button type="button" onClick={()=>setView(view === 'login' ? 'register' : 'login')} className="text-slate-400 text-[11px] font-black uppercase tracking-widest hover:text-emerald-400">{view === 'login' ? 'Primeiro acesso? Criar conta' : 'Já possui cadastro? Entrar'}</button></div>
+                            {msg.text && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold text-center rounded-xl">{msg.text}</div>}
+                            <button type="submit" disabled={busy} className="w-full bg-emerald-600 hover:bg-emerald-500 py-6 rounded-3xl font-black uppercase text-sm tracking-widest text-black shadow-xl active:scale-95 transition-all">
+                                {busy ? <Icon name="refresh-cw" className="animate-spin w-5 h-5 mx-auto" /> : 'Acessar Plataforma'}
+                            </button>
+                            <div className="text-center pt-2"><button type="button" onClick={()=>setView(view==='login'?'register':'login')} className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-emerald-400">{view==='login'?'Criar Conta':'Já sou membro'}</button></div>
                         </form>
                     </div>
                 </div>
@@ -303,173 +264,148 @@
 
             return (
                 <div className="min-h-screen flex flex-col lg:flex-row bg-[#020617]">
-                    <aside className="w-full lg:w-80 bg-[#090e1a] border-r border-white/5 p-8 flex flex-col gap-12">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg shadow-emerald-500/20"><Icon name="clover" className="text-black" /></div>
-                            <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">RadLot <span className="text-emerald-500 not-italic text-sm align-top">PRO</span></h1>
+                    <header className="lg:hidden p-4 bg-[#090e1a] border-b border-white/5 flex justify-between items-center">
+                        <div className="flex items-center gap-3"><Icon name="clover" className="text-emerald-500" /><h1 className="font-bold">RadLot PRO</h1></div>
+                        <div className="text-[10px] text-right">
+                            <p className="font-bold">@{profile?.apelido}</p>
+                            <p className="text-emerald-500">Ativo: {formatTimer(timer)}</p>
                         </div>
-                        <nav className="flex flex-row lg:flex-col gap-3 overflow-x-auto">
-                            {[
-                                { id: 'gerador', icon: 'layout-dashboard', label: 'Gerador' },
-                                { id: 'cofre', icon: 'history', label: 'Cofre' },
-                                { id: 'scanner', icon: 'shield-check', label: 'Scanner' },
-                                { id: 'perfil', icon: 'settings', label: 'Perfil' }
-                            ].map(item => (
-                                <button key={item.id} onClick={()=>setTab(item.id)} className={`flex items-center gap-5 px-6 py-5 rounded-2xl w-full border text-xs font-black uppercase transition-all ${tab === item.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-inner' : 'border-transparent text-slate-500 hover:bg-white/5'}`}>
-                                    <Icon name={item.icon} />
-                                    <span>{item.label}</span>
-                                </button>
+                    </header>
+
+                    {/* Sidebar */}
+                    <aside className="hidden lg:flex w-80 bg-[#090e1a] border-r border-white/5 p-8 flex-col gap-10">
+                        <div className="flex items-center gap-4 group">
+                            <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg"><Icon name="clover" className="text-black" /></div>
+                            <h1 className="text-2xl font-black italic uppercase tracking-tighter">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
+                        </div>
+                        <nav className="flex flex-col gap-3">
+                            {['gerador', 'cofre', 'scanner', 'perfil'].map(t => (
+                                <button key={t} onClick={()=>setTab(t)} className={`flex items-center gap-5 px-6 py-5 rounded-2xl w-full border text-xs font-black uppercase transition-all ${tab === t ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-inner' : 'border-transparent text-slate-500 hover:bg-white/5'}`}>{t}</button>
                             ))}
                         </nav>
-                        <div className="mt-auto pt-8 border-t border-white/5 space-y-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner">
-                                    <Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-8 h-8" />
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="font-black text-white text-xs truncate">@{profile?.apelido || 'Usuário'}</p>
-                                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60 italic">Online</p>
-                                </div>
-                            </div>
-                            <button onClick={()=>window.RadLotCore.api.signOut(window.RadLotCore.auth)} className="w-full py-4 bg-red-500/5 text-red-500 rounded-2xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all shadow-sm">Sair do Sistema</button>
+                        <div className="mt-auto pt-8 border-t border-white/5 space-y-4">
+                            <button onClick={()=>window.RadCore.api.signOut(window.RadCore.auth)} className="w-full py-4 bg-red-500/5 text-red-500 rounded-2xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all shadow-sm">Encerrar Sessão</button>
                         </div>
                     </aside>
 
-                    <main className="flex-grow p-4 lg:p-12 overflow-y-auto custom-scrollbar">
-                        {tab === 'gerador' && (
-                            <div className="space-y-12 fade-in">
-                                <header className="flex flex-col lg:flex-row justify-between gap-10 text-center lg:text-left">
-                                    <div><h2 className="text-5xl font-black uppercase italic text-white tracking-tighter">Painel Gerador</h2><p className="text-slate-500 text-sm mt-2 font-medium italic opacity-80">Olá, {profile?.apelido}. Matriz estatística 2009-2025.</p></div>
-                                    <div className="flex flex-wrap gap-2 p-2 bg-[#0c1220] rounded-[2rem] border border-white/5 shadow-2xl justify-center">
-                                        {Object.keys(MODS).map(k => (
-                                            <button key={k} onClick={()=>{setActiveLotto(k);setGame(null);setAiAnalysis("");}} className={`px-6 py-3 rounded-[1.5rem] text-[11px] font-black uppercase transition-all ${activeLotto === k ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-white'}`}>{MODS[k].n}</button>
-                                        ))}
-                                    </div>
-                                </header>
-                                
-                                <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-                                    <div className="xl:col-span-2 bg-[#0c1220] rounded-[3.5rem] p-10 lg:p-20 border border-white/5 shadow-2xl min-h-[550px] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                                        {game ? (
-                                            <div className="w-full space-y-12 animate-pop">
-                                                <div className="flex flex-wrap justify-center gap-6">{game.map((n, i) => <div key={i} className="w-16 h-16 lg:w-24 lg:h-24 rounded-[2.5rem] bg-gradient-to-br from-[#1e293b] to-[#111827] border-2 border-emerald-500/30 flex items-center justify-center text-white font-black text-2xl lg:text-6xl shadow-2xl">{n.toString().padStart(2,'0')}</div>)}</div>
-                                                
-                                                <div className="max-w-2xl mx-auto">
-                                                    {!aiAnalysis ? (
-                                                        <button onClick={analyzeWithAI} disabled={isAiLoading} className="px-8 py-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-400 font-black text-[10px] uppercase tracking-widest hover:bg-blue-500/20 transition-all flex items-center gap-3 mx-auto">
-                                                            {isAiLoading ? <Icon name="refresh-cw" className="animate-spin" /> : <Icon name="sparkles" />}
-                                                            ✨ Analisar com IA Gemini
-                                                        </button>
-                                                    ) : (
-                                                        <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-[2.5rem] text-left fade-in">
-                                                            <div className="flex items-center gap-3 mb-4 text-blue-400 font-black uppercase text-[10px]"><Icon name="cpu" /> Parecer Técnico IA</div>
-                                                            <p className="text-sm text-slate-300 leading-relaxed italic">"{aiAnalysis}"</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex flex-col sm:flex-row justify-center gap-6 pt-10">
-                                                    <button onClick={saveGame} className="px-12 py-6 bg-emerald-600 hover:bg-emerald-500 rounded-3xl font-black text-xs uppercase tracking-widest text-black shadow-xl active:scale-95 transition-all">SALVAR NO COFRE</button>
-                                                    <button onClick={()=>setGame(null)} className="px-12 py-6 bg-white/5 hover:bg-white/10 rounded-3xl font-black text-xs uppercase tracking-widest border border-white/10">DESCARTAR</button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-12 animate-pop">
-                                                <div className="w-36 h-36 bg-emerald-500/5 rounded-[3.5rem] flex items-center justify-center mx-auto border-2 border-dashed border-emerald-500/20 relative">
-                                                    <Icon name="zap" className="w-12 h-12 text-emerald-500 animate-pulse mx-auto" />
-                                                </div>
-                                                <h3 className="text-4xl font-black italic uppercase text-white tracking-tighter">Motor Préditivo Ativo</h3>
-                                                <button onClick={runGenerator} disabled={isBusy} className="px-16 py-8 bg-emerald-600 hover:bg-emerald-500 rounded-[2.5rem] font-black text-black uppercase tracking-widest shadow-xl border-b-8 border-emerald-900 active:scale-95 transition-all">RODAR SIMULAÇÃO</button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="bg-[#0c1220] rounded-[3rem] p-10 border border-white/5 shadow-inner relative flex flex-col gap-8">
-                                        <div className="flex justify-between items-center">
-                                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Icon name="bar-chart-2" className="text-emerald-500" /> Mapa de Calor</h4>
-                                            <button onClick={()=>setShowMapHelp(!showMapHelp)} className="text-slate-500 hover:text-emerald-500 transition-colors"><Icon name="help-circle" /></button>
-                                        </div>
-                                        {showMapHelp && (
-                                            <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] text-[11px] italic text-emerald-400 leading-relaxed fade-in">O mapa visualiza a dispersão espacial. Matematicamente, ele ajuda a evitar agrupamentos extremos, que são estatisticamente menos frequentes que distribuições equilibradas pela grade.</div>
-                                        )}
-                                        <div className="grid grid-cols-5 gap-2 aspect-square p-3 bg-black/40 rounded-[2.5rem] border border-white/5 shadow-inner">
-                                            {Array.from({length: 25}).map((_,i)=><div key={i} className={`rounded-xl transition-all duration-700 ${game?.includes(i+1)?'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]':'bg-white/5 opacity-10'}`}></div>)}
-                                        </div>
-                                    </div>
+                    {/* Main Workspace */}
+                    <main className="flex-grow flex flex-col relative overflow-hidden">
+                        {/* Header Superior Direito */}
+                        <div className="hidden lg:flex absolute top-10 right-12 items-center gap-6 z-50">
+                            <div className="text-right">
+                                <p className="text-sm font-black text-white uppercase tracking-tighter">{profile?.nome || 'Usuário Maker'}</p>
+                                <div className="flex items-center justify-end gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sessão Ativa: {formatTimer(timer)}</p>
                                 </div>
                             </div>
-                        )}
-                        
-                        {tab === 'perfil' && (
-                            <div className="space-y-12 fade-in">
-                                <h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Configurações</h2>
-                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                                    <div className="bg-[#0c1220] border border-white/5 p-12 rounded-[4rem] shadow-2xl space-y-10">
-                                        <div className="flex items-center gap-8 mb-8 pb-8 border-b border-white/5 text-white">
-                                            <div className="w-24 h-24 rounded-[2rem] bg-slate-800 flex items-center justify-center text-emerald-500 shadow-inner">
-                                                <Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-16 h-16" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <h3 className="text-2xl font-black">{profile?.nome}</h3>
-                                                <p className="text-emerald-500 font-bold tracking-widest uppercase text-xs italic">@{profile?.apelido}</p>
-                                            </div>
+                            <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner">
+                                <Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-8 h-8" />
+                            </div>
+                        </div>
+
+                        <div className="flex-grow p-4 lg:p-16 overflow-y-auto custom-scrollbar pt-24 lg:pt-32">
+                            {tab === 'gerador' && (
+                                <div className="space-y-12 fade-in max-w-6xl mx-auto">
+                                    <header className="flex flex-col lg:flex-row justify-between gap-10">
+                                        <div><h2 className="text-5xl font-black uppercase italic tracking-tighter">Processador de Dezenas</h2><p className="text-slate-500 text-sm mt-2 font-medium">Algoritmo Maker otimizado para o período 2009-2025.</p></div>
+                                        <div className="flex flex-wrap gap-2 p-2 bg-[#0c1220] rounded-[2rem] border border-white/5 shadow-2xl justify-center h-fit">
+                                            {Object.keys(MODS).map(k => (
+                                                <button key={k} onClick={()=>{setLotto(k);setGame(null);}} className={`px-6 py-3 rounded-[1.5rem] text-[11px] font-black uppercase transition-all ${lotto === k ? 'bg-emerald-500 text-black shadow-lg' : 'text-slate-500 hover:text-white'}`}>{MODS[k].n}</button>
+                                            ))}
                                         </div>
-                                        <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-white font-medium">
-                                            <label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest">✨ Dica de Sorte Diária (Gemini IA)</label>
-                                            {!aiDicaDia ? (
-                                                <button onClick={getLuckyTip} disabled={isAiLoading} className="text-blue-400 font-bold text-sm hover:underline flex items-center gap-2">
-                                                    {isAiLoading ? <Icon name="refresh-cw" className="animate-spin" /> : <Icon name="sparkles" />}
-                                                    Gerar minha dica diária
-                                                </button>
+                                    </header>
+
+                                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
+                                        <div className="xl:col-span-2 bg-[#0c1220] border border-white/5 rounded-[4rem] p-10 lg:p-20 flex flex-col items-center justify-center text-center shadow-2xl min-h-[500px]">
+                                            {game ? (
+                                                <div className="space-y-12 w-full animate-in zoom-in-95">
+                                                    <div className="flex flex-wrap justify-center gap-5">{game.map((n, i) => <div key={i} className="w-16 h-16 lg:w-24 lg:h-24 rounded-[2rem] bg-[#1e293b] border-2 border-emerald-500/30 flex items-center justify-center text-white font-black text-2xl lg:text-5xl shadow-2xl">{n.toString().padStart(2,'0')}</div>)}</div>
+                                                    <div className="grid grid-cols-2 gap-8 max-w-md mx-auto pt-10 border-t border-white/5 font-black uppercase text-[10px] text-slate-500">
+                                                        <div><p>Paridade</p><p className="text-2xl text-emerald-400 italic">{game.filter(n=>n%2===0).length}P / {game.length-game.filter(n=>n%2===0).length}Í</p></div>
+                                                        <div><p>Soma</p><p className="text-2xl text-emerald-400 italic">{game.reduce((a,b)=>a+b,0)}</p></div>
+                                                    </div>
+                                                    <div className="flex gap-4 justify-center pt-6"><button onClick={saveGame} className="px-12 py-6 bg-emerald-600 hover:bg-emerald-500 rounded-3xl font-black text-xs uppercase tracking-widest text-black shadow-xl active:scale-95 transition-all">SALVAR NO COFRE</button><button onClick={()=>setGame(null)} className="px-12 py-6 bg-white/5 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-white/10">DESCARTAR</button></div>
+                                                </div>
                                             ) : (
-                                                <p className="text-sm italic leading-relaxed text-blue-200">"{aiDicaDia}"</p>
+                                                <div className="space-y-10">
+                                                    <div className="w-40 h-40 bg-emerald-500/5 rounded-[4rem] flex items-center justify-center mx-auto border-2 border-dashed border-emerald-500/20"><Icon name="zap" className="w-12 h-12 text-emerald-500 animate-pulse" /></div>
+                                                    <h3 className="text-3xl font-black uppercase italic tracking-tighter">Otimização de Amostragem</h3>
+                                                    <button onClick={generate} disabled={busy} className="px-16 py-8 bg-emerald-600 hover:bg-emerald-500 rounded-[2.5rem] font-black text-black uppercase tracking-[0.4em] text-sm shadow-xl active:scale-95 border-b-8 border-emerald-900 transition-all">RODAR SISTEMA</button>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                    <div className="bg-[#0c1220] border border-white/5 p-12 rounded-[4rem] shadow-2xl flex flex-col justify-center items-center text-center space-y-6 text-white">
-                                        <Icon name="shield-check" className="w-20 h-20 text-emerald-500 opacity-20" />
-                                        <h3 className="text-xl font-black uppercase italic tracking-widest">Segurança de Dados</h3>
-                                        <p className="text-slate-500 text-sm max-w-xs">Seus registros são criptografados e salvos de forma independente no servidor RadLot Cloud.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {tab === 'cofre' && (
-                            <div className="space-y-12 fade-in">
-                                <h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Meu Cofre</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 text-white">
-                                    {vault.length === 0 ? <div className="col-span-full py-48 text-center opacity-10"><Icon name="database" className="w-24 h-24 mx-auto mb-8 text-white" /><p className="text-2xl uppercase font-black tracking-[0.8em] text-white">Cofre Vazio</p></div> : 
-                                        vault.map(j => (
-                                            <div key={j.id} className="bg-[#0c1220] border border-white/5 p-10 rounded-[3.5rem] flex flex-col gap-10 shadow-2xl relative group overflow-hidden">
-                                                <div className="flex justify-between items-start relative z-10"><div className="px-6 py-2.5 rounded-2xl text-[10px] font-black text-white uppercase shadow-2xl" style={{backgroundColor:MODS[j.tipo]?.color}}>{MODS[j.tipo]?.n}</div><button onClick={()=>window.RadLotCore.dbOps.deleteDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db,'artifacts','radlot-pro-main','users',user.uid,'vault',j.id))} className="p-4 bg-white/5 text-slate-400 rounded-3xl hover:text-red-500 transition-all shadow-inner"><Icon name="trash-2" /></button></div>
-                                                <div className="flex flex-wrap gap-4 relative z-10">{j.numeros.map((n, i) => <span key={i} className="w-14 h-14 flex items-center justify-center bg-black/60 rounded-[1.5rem] text-2xl font-mono font-black text-emerald-400 border border-emerald-500/10 shadow-2xl">{n.toString().padStart(2, '0')}</span>)}</div>
-                                                <div className="flex justify-between items-center text-[11px] text-slate-600 font-black border-t border-white/5 pt-8 uppercase tracking-widest relative z-10"><span>Soma: {j.stats?.soma}</span><span>{new Date(j.criadoEm?.seconds * 1000).toLocaleDateString('pt-BR')}</span></div>
-                                            </div>
-                                        ))
-                                    }
-                                </div>
-                            </div>
-                        )}
-                        
-                        {tab === 'scanner' && (
-                            <div className="space-y-12 fade-in">
-                                <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-                                    <div><h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Scanner Live</h2><p className="text-slate-500 text-sm mt-2 font-medium italic opacity-80 text-center lg:text-left">Conexão oficial Caixa Econômica.</p></div>
-                                    <button onClick={async ()=>{setIsBusy(true); try{const r=await fetch(`https://loteriascaixa-api.herokuapp.com/api/${MODS[activeLotto].api}/latest`); const d=await r.json(); setApiData(prev=>({...prev,[activeLotto]:d}));}catch(e){}setIsBusy(false);}} className="px-12 py-8 bg-emerald-500/10 border border-emerald-500/20 rounded-[3rem] text-emerald-400 font-black uppercase text-xs tracking-widest flex items-center gap-5 hover:bg-emerald-500/20 shadow-2xl mx-auto lg:mx-0">{isBusy ? <Icon name="refresh-cw" className="animate-spin" /> : <Icon name="globe" />} SINCRONIZAR</button>
-                                </header>
-                                {apiData[activeLotto] && (
-                                    <div className="bg-[#0c1220] border border-white/5 rounded-[4rem] p-12 lg:p-24 flex flex-col items-center gap-16 shadow-2xl relative overflow-hidden animate-pop text-white font-black">
-                                        <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500 opacity-30"></div>
-                                        <div className="text-center space-y-4 relative z-10"><h3 className="text-[16px] font-black uppercase text-emerald-500 tracking-[0.8em]">Concurso Oficial #{apiData[activeLotto].concurso}</h3><p className="text-slate-500 text-sm font-bold uppercase tracking-widest opacity-60 italic">{apiData[activeLotto].data}</p></div>
-                                        <div className="flex flex-wrap justify-center gap-6 lg:gap-10 relative z-10">{apiData[activeLotto].dezenas.map((n, i) => <div key={i} className="w-16 h-16 lg:w-32 lg:h-32 rounded-[2.5rem] bg-emerald-500 text-black flex items-center justify-center font-black text-2xl lg:text-7xl shadow-[0_20px_50px_rgba(16,185,129,0.4)] border-4 border-emerald-400/50">{n}</div>)}</div>
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 w-full max-w-5xl pt-16 border-t border-white/5 text-center relative z-10">
-                                            <div className="bg-white/5 p-10 rounded-[3rem] shadow-inner text-white uppercase"><span className="text-[10px] text-slate-500 block mb-6 font-black tracking-widest opacity-60">Agenda do Próximo Sorteio</span><p className="text-5xl font-black italic tracking-tighter mb-4 leading-none">#{apiData[activeLotto].proximoConcurso}</p><p className="text-emerald-400 font-black text-sm">{apiData[activeLotto].dataProximoConcurso}</p></div>
-                                            <div className="bg-white/5 p-10 rounded-[3rem] shadow-inner text-white uppercase"><span className="text-[10px] text-slate-500 block mb-6 font-black tracking-widest opacity-60">Prêmio Acumulado</span><p className="text-5xl font-black italic tracking-tighter leading-none shadow-emerald-500/20">{apiData[activeLotto].valorEstimadoProximoConcurso?.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</p></div>
+
+                                        <div className="bg-[#0c1220] rounded-[3rem] p-10 border border-white/5 shadow-inner">
+                                            <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-3 mb-8"><Icon name="layout-grid" className="text-emerald-500" /> Grade de Dispersão</h4>
+                                            <p className="text-[10px] text-slate-400 mb-8 italic leading-relaxed">Esta ferramenta visualiza como os números ocupam o espaço no volante. Uma dispersão equilibrada na grade reduz a chance de agrupamentos com baixa probabilidade estatística.</p>
+                                            <div className="grid grid-cols-5 gap-2 aspect-square p-4 bg-black/40 rounded-[2.5rem] border border-white/5 shadow-inner">{Array.from({length: 25}).map((_,i)=><div key={i} className={`rounded-xl transition-all duration-700 ${game?.includes(i+1)?'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]':'bg-white/5 opacity-10'}`}></div>)}</div>
+                                            <p className="text-[9px] text-slate-600 uppercase font-black text-center mt-8 tracking-widest">Equilíbrio de Cobertura</p>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        )}
+                                </div>
+                            )}
+
+                            {tab === 'cofre' && (
+                                <div className="space-y-12 fade-in max-w-6xl mx-auto">
+                                    <h2 className="text-5xl font-black uppercase italic tracking-tighter">Meus Registros</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                                        {vault.length === 0 ? <div className="col-span-full py-48 text-center opacity-10"><Icon name="database" className="w-20 h-20 mx-auto mb-6" /><p className="text-2xl font-black uppercase tracking-widest">Vault Vazio</p></div> : 
+                                            vault.map(j => (
+                                                <div key={j.id} className="bg-[#0c1220] border border-white/5 p-10 rounded-[3.5rem] flex flex-col gap-10 shadow-2xl relative group overflow-hidden">
+                                                    <div className="flex justify-between items-start relative z-10"><div className="px-6 py-2.5 rounded-2xl text-[10px] font-black text-white uppercase shadow-2xl" style={{backgroundColor:MODS[j.tipo]?.color}}>{MODS[j.tipo]?.n}</div><button onClick={()=>window.RadCore.dbOps.deleteDoc(window.RadCore.dbOps.doc(window.RadCore.db,'artifacts','radlot-pro-main','users',user.uid,'vault',j.id))} className="p-4 bg-white/5 text-slate-400 rounded-3xl hover:text-red-500 transition-all shadow-inner"><Icon name="trash-2" /></button></div>
+                                                    <div className="flex flex-wrap gap-4 relative z-10">{j.numeros.map((n, i) => <span key={i} className="w-14 h-14 flex items-center justify-center bg-black/60 rounded-[1.5rem] text-2xl font-mono font-black text-emerald-400 border border-emerald-500/10 shadow-2xl">{n.toString().padStart(2, '0')}</span>)}</div>
+                                                    <div className="flex justify-between items-center text-[10px] text-slate-600 font-black border-t border-white/5 pt-8 uppercase tracking-widest relative z-10"><span>Soma: {j.stats?.soma}</span><span>{new Date(j.criadoEm?.seconds * 1000).toLocaleDateString('pt-BR')}</span></div>
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {tab === 'scanner' && (
+                                <div className="space-y-12 fade-in max-w-6xl mx-auto">
+                                    <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+                                        <div><h2 className="text-5xl font-black uppercase italic tracking-tighter">Conferência Automática</h2><p className="text-slate-500 text-sm mt-2 font-medium opacity-80">Validação instantânea contra o banco de dados oficial.</p></div>
+                                        <button onClick={syncOfficial} disabled={busy} className="px-12 py-8 bg-emerald-500/10 border border-emerald-500/20 rounded-[3rem] text-emerald-400 font-black uppercase text-xs tracking-widest flex items-center gap-5 hover:bg-emerald-500/20 shadow-2xl active:scale-95 transition-all">{busy ? <Icon name="refresh-cw" className="animate-spin w-6 h-6" /> : <Icon name="globe" className="w-6 h-6" />} SINCRONIZAR AGORA</button>
+                                    </header>
+                                    {apiData[lotto] && (
+                                        <div className="bg-[#0c1220] border border-white/5 rounded-[4rem] p-12 lg:p-24 flex flex-col items-center gap-16 shadow-2xl relative overflow-hidden animate-pop">
+                                            <div className="text-center space-y-4 relative z-10"><h3 className="text-[16px] font-black uppercase text-emerald-500 tracking-[0.8em]">Concurso #{apiData[lotto].concurso}</h3><p className="text-slate-500 text-sm font-bold opacity-60 italic">{apiData[lotto].data}</p></div>
+                                            <div className="flex flex-wrap justify-center gap-6 lg:gap-10 relative z-10">{apiData[lotto].dezenas.map((n, i) => <div key={i} className="w-16 h-16 lg:w-32 lg:h-32 rounded-[2.5rem] bg-emerald-500 text-black flex items-center justify-center font-black text-2xl lg:text-7xl shadow-[0_20px_50px_rgba(16,185,129,0.4)] border-4 border-emerald-400/50 animate-in zoom-in duration-500">{n}</div>)}</div>
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 w-full max-w-5xl pt-16 border-t border-white/5 text-center relative z-10 uppercase font-black tracking-widest">
+                                                <div className="bg-white/5 p-10 rounded-[3rem] shadow-inner"><span className="text-[10px] text-slate-500 block mb-6 opacity-60">Próximo Sorteio</span><p className="text-4xl text-white italic tracking-tighter mb-4 leading-none">#{apiData[lotto].proximoConcurso}</p><p className="text-emerald-400 text-sm">{apiData[lotto].dataProximoConcurso}</p></div>
+                                                <div className="bg-white/5 p-10 rounded-[3rem] shadow-inner"><span className="text-[10px] text-slate-500 block mb-6 opacity-60">Valor Estimado</span><p className="text-4xl text-emerald-400 italic tracking-tighter leading-none shadow-emerald-500/20">{apiData[lotto].valorEstimadoProximoConcurso?.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</p></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {tab === 'perfil' && (
+                                <div className="space-y-12 fade-in max-w-4xl mx-auto">
+                                    <h2 className="text-5xl font-black uppercase italic tracking-tighter">Editar Cadastro</h2>
+                                    <div className="bg-[#0c1220] border border-white/5 p-12 rounded-[4rem] shadow-2xl">
+                                        <form onSubmit={async (e)=>{e.preventDefault();setBusy(true);try{const ref=window.RadCore.dbOps.doc(window.RadCore.db,'artifacts','radlot-pro-main','users',user.uid,'profile','data');await window.RadCore.dbOps.updateDoc(ref,profile);setMsg({type:'success',text:'Informações atualizadas com sucesso!'});}catch(err){setMsg({type:'error',text:'Falha ao salvar.'});}setBusy(false);}} className="space-y-10">
+                                            <div className="flex flex-col md:flex-row items-center gap-10 pb-10 border-b border-white/5">
+                                                <div className="w-32 h-32 rounded-[2rem] bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner"><Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-16 h-16" /></div>
+                                                <div className="space-y-4 text-center md:text-left text-white uppercase font-black">
+                                                    <label className="text-[10px] text-slate-500 tracking-widest block mb-4">Escolha de Gênero (Avatar)</label>
+                                                    <div className="flex gap-4 justify-center md:justify-start"><button type="button" onClick={()=>setProfile({...profile, sexo:'masculino'})} className={`px-10 py-3 rounded-2xl text-[10px] border transition-all ${profile?.sexo === 'masculino'?'bg-emerald-500 border-emerald-400 text-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>Masculino</button><button type="button" onClick={()=>setProfile({...profile, sexo:'feminino'})} className={`px-10 py-3 rounded-2xl text-[10px] border transition-all ${profile?.sexo === 'feminino'?'bg-emerald-500 border-emerald-400 text-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>Feminino</button></div>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Nome Permanente</label><input type="text" value={profile?.nome || ''} onChange={e=>setProfile({...profile, nome:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none text-lg font-medium shadow-inner" required /></div>
+                                                <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Apelido Profissional</label><input type="text" value={profile?.apelido || ''} onChange={e=>setProfile({...profile, apelido:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none text-lg font-medium shadow-inner" required /></div>
+                                            </div>
+                                            <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Contato Vinculado</label><input type="tel" value={profile?.telefone || ''} onChange={e=>setProfile({...profile, telefone:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none text-lg font-medium shadow-inner" required /></div>
+                                            <button type="submit" disabled={busy} className="w-full py-8 bg-emerald-600 hover:bg-emerald-500 text-black font-black rounded-[2rem] uppercase text-sm tracking-[0.2em] shadow-2xl active:scale-95 border-b-8 border-emerald-900 transition-all">SALVAR ALTERAÇÕES</button>
+                                            {msg.text && <div className={`p-6 rounded-[2rem] border text-[10px] font-black uppercase text-center flex items-center justify-center gap-3 shadow-lg ${msg.type==='success'?'bg-emerald-500/10 text-emerald-400 border-emerald-500/20':'bg-red-500/10 text-red-400 border-red-500/20'}`}>{msg.text}</div>}
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </main>
                 </div>
             );
