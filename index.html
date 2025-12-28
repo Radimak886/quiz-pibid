@@ -1,323 +1,272 @@
-import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  sendPasswordResetEmail,
-  onAuthStateChanged, 
-  signOut,
-  updatePassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  setDoc,
-  onSnapshot, 
-  doc, 
-  getDoc,
-  updateDoc,
-  deleteDoc, 
-  serverTimestamp 
-} from 'firebase/firestore';
-import { 
-  Zap, History, CheckCircle, Trash2, 
-  Trophy, Database, Save, FileText, 
-  Target, ShieldCheck, RefreshCw, LayoutDashboard,
-  LogOut, Mail, Lock, UserPlus, LogIn, Download,
-  User, Calendar, Phone, Fingerprint,
-  ChevronRight, KeyRound, ArrowLeft, Info, Clover,
-  BarChart2, Sigma, Globe, Settings, HelpCircle,
-  CircleUser, UserSquare, X, ChevronDown
-} from 'lucide-react';
-
-// --- Configuração Firebase ---
-const firebaseConfig = {
-  apiKey: "AIzaSyCqTWx5laCDp4jrySVXz_0kt43sOscPogo",
-  authDomain: "radlot-pro.firebaseapp.com",
-  projectId: "radlot-pro",
-  storageBucket: "radlot-pro.firebasestorage.app",
-  messagingSenderId: "367073747408",
-  appId: "1:367073747408:web:83b9c26cd6808294cdd9d5"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const ROOT_PATH = "radlot-pro-main";
-
-const LOTTO_MODES = {
-  mega: { nome: 'Mega-Sena', api: 'megasena', max: 60, pick: 6, cor: '#10b981', hot: [10, 53, 5, 4, 33, 23, 27, 30, 37, 42] },
-  facil: { nome: 'Lotofácil', api: 'lotofacil', max: 25, pick: 15, cor: '#a855f7', hot: [20, 11, 10, 13, 24, 25, 14, 3, 4, 12] },
-  quina: { nome: 'Quina', api: 'quina', max: 80, pick: 5, cor: '#3b82f6', hot: [4, 49, 31, 39, 52, 16, 18, 53, 10, 38] },
-  timemania: { nome: 'Timemania', api: 'timemania', max: 80, pick: 10, cor: '#eab308', hot: [20, 71, 80, 4, 6, 70, 72, 60, 21, 25] },
-  sorte: { nome: 'Dia de Sorte', api: 'diadesorte', max: 31, pick: 7, cor: '#f97316', hot: [10, 7, 23, 31, 9, 21, 15, 1, 14, 8] }
-};
-
-// --- Componentes ---
-const StatusToast = ({ message }) => {
-  if (!message.text) return null;
-  const isErr = message.type === 'error';
-  return (
-    <div className={`p-4 rounded-2xl border text-[10px] font-black uppercase text-center flex items-center justify-center gap-2 animate-in slide-in-from-top-2 ${isErr ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
-      {isErr ? <X size={14} /> : <CheckCircle size={14} />}
-      {message.text}
-    </div>
-  );
-};
-
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('login'); // login | register | recovery
-  const [tab, setTab] = useState('gerador');
-  const [lotto, setLotto] = useState('mega');
-  const [game, setGame] = useState(null);
-  const [vault, setVault] = useState([]);
-  const [apiData, setApiData] = useState({});
-  const [busy, setBusy] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [msg, setMsg] = useState({ type: '', text: '' });
-
-  // Form states
-  const [authForm, setAuthForm] = useState({ nome: '', apelido: '', nascimento: '', telefone: '', cTelefone: '', email: '', cEmail: '', senha: '', cSenha: '', loginId: '', sexo: 'masculino' });
-  const [editForm, setEditForm] = useState({ nome: '', apelido: '', telefone: '', sexo: '', oldPass: '', newPass: '', cNewPass: '' });
-
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    document.body.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        const snap = await getDoc(doc(db, 'artifacts', ROOT_PATH, 'users', u.uid, 'profile', 'data'));
-        if (snap.exists()) {
-          const d = snap.data();
-          setProfile(d);
-          setEditForm({ nome: d.nome, apelido: d.apelido, telefone: d.telefone, sexo: d.sexo || 'masculino', oldPass: '', newPass: '', cNewPass: '' });
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadLot PRO | Gestão Preditiva</title>
+    
+    <!-- Frameworks -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617; 
+            color: #f8fafc; 
+            margin: 0; 
+            -webkit-font-smoothing: antialiased;
         }
-        setUser(u);
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = collection(db, 'artifacts', ROOT_PATH, 'users', user.uid, 'vault');
-    return onSnapshot(q, (s) => setVault(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }, [user]);
-
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setMsg({ type: '', text: '' });
-    try {
-      if (view === 'register') {
-        if (!authForm.nome || !authForm.apelido || !authForm.nascimento || !authForm.telefone || !authForm.email || !authForm.senha) throw new Error("Todos os campos são obrigatórios.");
-        if (authForm.email !== authForm.cEmail) throw new Error("E-mails não conferem.");
-        if (authForm.telefone !== authForm.cTelefone) throw new Error("Telefones não conferem.");
-        if (authForm.senha !== authForm.cSenha) throw new Error("Senhas não conferem.");
         
-        const uc = await createUserWithEmailAndPassword(auth, authForm.email, authForm.senha);
-        const data = { nome: authForm.nome, apelido: authForm.apelido, nascimento: authForm.nascimento, telefone: authForm.telefone, email: authForm.email, sexo: authForm.sexo, createdAt: serverTimestamp() };
-        await setDoc(doc(db, 'artifacts', ROOT_PATH, 'users', uc.user.uid, 'profile', 'data'), data);
-        await setDoc(doc(db, 'artifacts', ROOT_PATH, 'public', 'data', 'nicknames', authForm.apelido.toLowerCase()), { email: authForm.email });
-      } else if (view === 'login') {
-        let emailTarget = authForm.loginId;
-        if (!emailTarget.includes('@')) {
-          const snap = await getDoc(doc(db, 'artifacts', ROOT_PATH, 'public', 'data', 'nicknames', emailTarget.toLowerCase()));
-          if (snap.exists()) emailTarget = snap.data().email;
-          else throw new Error("Usuário ou e-mail incorreto.");
+        /* Visibilidade dos Inputs */
+        input, select {
+            color: #ffffff !important;
+            background-color: rgba(30, 41, 59, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
-        await signInWithEmailAndPassword(auth, emailTarget, authForm.senha);
-      } else {
-        await sendPasswordResetEmail(auth, authForm.email);
-        setMsg({ type: 'success', text: "Link enviado ao e-mail informado." });
-        setTimeout(() => setView('login'), 4000);
-      }
-    } catch (err) {
-      let m = "Credenciais inválidas.";
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') m = "E-mail/Usuário ou senha incorretos.";
-      if (err.code === 'auth/user-not-found') m = "Utilizador não cadastrado.";
-      if (err.message === "Usuário ou e-mail incorreto.") m = "Apelido não localizado.";
-      setMsg({ type: 'error', text: m });
-    }
-  };
+        input:focus {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-  const updateProfile = async (e) => {
-    e.preventDefault();
-    setBusy(true);
-    setMsg({ type: '', text: '' });
-    try {
-      const ref = doc(db, 'artifacts', ROOT_PATH, 'users', user.uid, 'profile', 'data');
-      await updateDoc(ref, { nome: editForm.nome, apelido: editForm.apelido, telefone: editForm.telefone, sexo: editForm.sexo });
-      if (editForm.newPass) {
-        if (editForm.newPass !== editForm.cNewPass) throw new Error("Confirmação da nova senha falhou.");
-        const cred = EmailAuthProvider.credential(user.email, editForm.oldPass);
-        await reauthenticateWithCredential(user, cred);
-        await updatePassword(user, editForm.newPass);
-      }
-      setProfile(prev => ({ ...prev, ...editForm }));
-      setMsg({ type: 'success', text: "Perfil atualizado com sucesso!" });
-    } catch (err) { setMsg({ type: 'error', text: err.message }); }
-    setBusy(false);
-  };
+    <!-- Firebase Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const calculate = () => {
-    setBusy(true);
-    const cfg = LOTTO_MODES[lotto];
-    setTimeout(() => {
-      let urna = [];
-      cfg.hot.forEach(n => { for(let i=0; i<15; i++) urna.push(n); });
-      for(let i = 1; i <= cfg.max; i++) urna.push(i);
-      let res = [];
-      while(res.length < cfg.pick) {
-        let n = urna[Math.floor(Math.random() * urna.length)];
-        if(!res.includes(n)) res.push(n);
-      }
-      setGame(res.sort((a,b) => a - b));
-      setBusy(false);
-    }, 1000);
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqTWx5laCDp4jrySVXz_0kt43sOscPogo",
+            authDomain: "radlot-pro.firebaseapp.com",
+            projectId: "radlot-pro",
+            storageBucket: "radlot-pro.firebasestorage.app",
+            messagingSenderId: "367073747408",
+            appId: "1:367073747408:web:83b9c26cd6808294cdd9d5"
+        };
 
-  const saveToVault = async () => {
-    if (!user || !game) return;
-    const pares = game.filter(n => n % 2 === 0).length;
-    await addDoc(collection(db, 'artifacts', ROOT_PATH, 'users', user.uid, 'vault'), {
-      tipo: lotto, numeros: game,
-      stats: { pares, impares: game.length - pares, soma: game.reduce((a,b)=>a+b, 0) },
-      criadoEm: serverTimestamp()
-    });
-    setGame(null);
-  };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-      <RefreshCw className="text-emerald-500 animate-spin" size={40} />
-    </div>
-  );
+        window.RadLotCore = {
+            auth, db,
+            api: { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider },
+            dbOps: { collection, addDoc, setDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs }
+        };
+    </script>
 
-  if (!user) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4">
-      <div className="w-full max-w-xl bg-[#090e1a] border border-white/5 p-8 md:p-12 rounded-[3.5rem] shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
-        <div className="flex flex-col items-center gap-6 mb-12 text-center">
-          <div className="p-6 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-[1.5rem] shadow-xl"><Clover className="text-black" size={40} strokeWidth={2.5} /></div>
-          <h1 className="text-5xl font-black italic text-white tracking-tighter uppercase">RADLOT <span className="text-emerald-500 not-italic">PRO</span></h1>
-        </div>
+    <!-- UI Logic -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-        <form onSubmit={handleAuth} className="space-y-6">
-          {view === 'register' ? (
-            <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Nome Completo</label>
-                <input type="text" value={authForm.nome} onChange={e=>setAuthForm({...authForm, nome:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Apelido (Usuário)</label>
-                <input type="text" value={authForm.apelido} onChange={e=>setAuthForm({...authForm, apelido:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Nascimento</label>
-                <input type="date" value={authForm.nascimento} onChange={e=>setAuthForm({...authForm, nascimento:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Sexo</label>
-                    <select value={authForm.sexo} onChange={e=>setAuthForm({...authForm, sexo:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white appearance-none">
-                        <option value="masculino" className="bg-[#090e1a]">Masculino</option>
-                        <option value="feminino" className="bg-[#090e1a]">Feminino</option>
-                    </select>
+        const MODS = {
+            mega: { n: 'Mega-Sena', api: 'megasena', max: 60, k: 6, color: '#10b981', hot: [10, 53, 5, 4, 33, 23, 27, 30] },
+            facil: { n: 'Lotofácil', api: 'lotofacil', max: 25, k: 15, color: '#a855f7', hot: [20, 11, 10, 13, 24, 25, 14] },
+            quina: { n: 'Quina', api: 'quina', max: 80, k: 5, color: '#3b82f6', hot: [4, 49, 31, 39, 52, 16, 18] },
+            timemania: { n: 'Timemania', api: 'timemania', max: 80, k: 10, color: '#eab308', hot: [20, 71, 80, 4, 6, 70, 72] },
+            sorte: { n: 'Dia de Sorte', api: 'diadesorte', max: 31, k: 7, color: '#f97316', hot: [10, 7, 23, 31, 9, 21, 15] }
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [profile, setProfile] = useState(null);
+            const [init, setInit] = useState(false);
+            const [view, setView] = useState('login');
+            const [tab, setTab] = useState('gerador');
+            const [lotto, setLotto] = useState('mega');
+            const [game, setGame] = useState(null);
+            const [vault, setVault] = useState([]);
+            const [apiData, setApiData] = useState({});
+            const [msg, setMsg] = useState({ type: '', text: '' });
+            const [busy, setBusy] = useState(false);
+            const [showHelp, setShowHelp] = useState(false);
+
+            const [authForm, setAuthForm] = useState({ id: '', email: '', cEmail: '', pass: '', cPass: '', nome: '', apelido: '', tel: '', cTel: '', nascimento: '', sexo: 'masculino' });
+            const [editForm, setEditForm] = useState({ nome: '', apelido: '', tel: '', sexo: '', oldPass: '', newPass: '', cNewPass: '' });
+
+            // Iniciar Sistema
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    if (window.RadLotCore) {
+                        clearInterval(interval);
+                        window.RadLotCore.api.onAuthStateChanged(window.RadLotCore.auth, async (u) => {
+                            if (u) {
+                                setUser(u);
+                                try {
+                                    const snap = await window.RadLotCore.dbOps.getDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'users', u.uid, 'profile', 'data'));
+                                    if (snap.exists()) {
+                                        const d = snap.data();
+                                        setProfile(d);
+                                        setEditForm({ ...d, oldPass: '', newPass: '', cNewPass: '' });
+                                    }
+                                } catch (e) { console.error("Profile load failed", e); }
+                            } else {
+                                setUser(null);
+                                setProfile(null);
+                            }
+                            setInit(true); // Garante que a tela azul suma
+                        });
+                    }
+                }, 100);
+            }, []);
+
+            // Carregar Vault
+            useEffect(() => {
+                if (!user) return;
+                const q = window.RadLotCore.dbOps.collection(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault');
+                return window.RadLotCore.dbOps.onSnapshot(q, (s) => setVault(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+            }, [user]);
+
+            useEffect(() => { if (init) lucide.createIcons(); }, [init, view, tab, game]);
+
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setMsg({ type: '', text: '' });
+                setBusy(true);
+                try {
+                    if (view === 'register') {
+                        if (authForm.email !== authForm.cEmail) throw new Error("Emails não coincidem.");
+                        if (authForm.pass !== authForm.cPass) throw new Error("Senhas não coincidem.");
+                        if (authForm.tel !== authForm.cTel) throw new Error("Telefones não coincidem.");
+                        
+                        const uc = await window.RadLotCore.api.createUserWithEmailAndPassword(window.RadLotCore.auth, authForm.email, authForm.pass);
+                        const pData = { nome: authForm.nome, apelido: authForm.apelido, telefone: authForm.tel, nascimento: authForm.nascimento, sexo: authForm.sexo, email: authForm.email, createdAt: window.RadLotCore.dbOps.serverTimestamp() };
+                        await window.RadLotCore.dbOps.setDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'users', uc.user.uid, 'profile', 'data'), pData);
+                        await window.RadLotCore.dbOps.setDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', authForm.apelido.toLowerCase()), { email: authForm.email });
+                    } else if (view === 'login') {
+                        let email = authForm.id;
+                        if (!email.includes('@')) {
+                            const snap = await window.RadLotCore.dbOps.getDoc(window.RadLotCore.dbOps.doc(window.RadLotCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', email.toLowerCase()));
+                            if (snap.exists()) email = snap.data().email;
+                            else throw new Error("Apelido não encontrado.");
+                        }
+                        await window.RadLotCore.api.signInWithEmailAndPassword(window.RadLotCore.auth, email, authForm.pass);
+                    }
+                } catch (err) { 
+                    setMsg({ type: 'error', text: "Acesso negado. Verifique o identificador e a senha." }); 
+                }
+                setBusy(false);
+            };
+
+            const runGenerator = () => {
+                setBusy(true);
+                const cfg = MODS[lotto];
+                setTimeout(() => {
+                    let pool = [];
+                    cfg.hot.forEach(n => { for(let i=0; i<15; i++) pool.push(n); });
+                    for(let i = 1; i <= cfg.max; i++) pool.push(i);
+                    let res = [];
+                    while(res.length < cfg.k) {
+                        let n = pool[Math.floor(Math.random() * pool.length)];
+                        if(!res.includes(n)) res.push(n);
+                    }
+                    setGame(res.sort((a,b)=>a-b));
+                    setBusy(false);
+                }, 700);
+            };
+
+            if (!init) return (
+                <div className="min-h-screen flex items-center justify-center bg-[#020617] text-emerald-500">
+                    <div className="text-center space-y-4">
+                        <i data-lucide="refresh-cw" className="w-12 h-12 animate-spin mx-auto"></i>
+                        <p className="font-black uppercase tracking-[0.3em] text-[10px]">Sincronizando RadLot PRO...</p>
+                    </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Telefone</label>
-                <input type="tel" value={authForm.telefone} onChange={e=>setAuthForm({...authForm, telefone:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" placeholder="(00) 00000-0000" required /></div>
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Confirmar Telefone</label>
-                <input type="tel" value={authForm.cTelefone} onChange={e=>setAuthForm({...authForm, cTelefone:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">E-mail</label>
-                <input type="email" value={authForm.email} onChange={e=>setAuthForm({...authForm, email:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Confirmar E-mail</label>
-                <input type="email" value={authForm.cEmail} onChange={e=>setAuthForm({...authForm, cEmail:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Senha</label>
-                <input type="password" value={authForm.senha} onChange={e=>setAuthForm({...authForm, senha:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-                <div className="space-y-1"><label className="text-[10px] text-slate-500 uppercase font-black ml-1">Confirmar Senha</label>
-                <input type="password" value={authForm.cSenha} onChange={e=>setAuthForm({...authForm, cSenha:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-emerald-500 text-white font-medium" required /></div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="space-y-2"><label className="text-[10px] text-slate-500 uppercase font-black ml-1 tracking-widest">{view === 'login' ? 'E-mail ou Apelido' : 'E-mail'}</label>
-              <input type="text" value={view === 'login' ? authForm.loginId : authForm.email} onChange={e=>view === 'login' ? setAuthForm({...authForm, loginId:e.target.value}) : setAuthForm({...authForm, email:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-emerald-500 text-white text-lg font-semibold" required /></div>
-              {view === 'login' && <div className="space-y-2"><label className="text-[10px] text-slate-500 uppercase font-black ml-1 tracking-widest">Senha</label>
-              <input type="password" value={authForm.senha} onChange={e=>setAuthForm({...authForm, senha:e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-emerald-500 text-white text-lg font-semibold" required /></div>}
-            </div>
-          )}
+            );
 
-          <StatusToast message={msg} />
-          
-          <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 py-6 rounded-3xl font-black uppercase text-sm tracking-widest active:scale-95 shadow-xl border-b-4 border-emerald-800 text-black">
-            {view === 'register' ? 'Criar Conta Agora' : view === 'recovery' ? 'Enviar Link' : 'Entrar no Sistema'}
-          </button>
-          
-          <div className="flex flex-col gap-4 text-center pt-4">
-            {view === 'login' && <button type="button" onClick={()=>setView('recovery')} className="text-[10px] text-slate-500 uppercase font-black hover:text-emerald-400 tracking-widest">Esqueceu a senha?</button>}
-            <button type="button" onClick={()=>{setView(view === 'login' ? 'register' : 'login'); setMsg({type:'',text:''});}} className="text-slate-400 text-[10px] font-black uppercase hover:text-emerald-400 flex items-center justify-center gap-2 mx-auto tracking-widest">
-              {view === 'login' ? "Primeiro acesso? Criar conta" : "Já possui conta? Entrar"} <ChevronRight size={14} />
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+            if (!user) return (
+                <div className="min-h-screen flex items-center justify-center p-4 bg-[#020617]">
+                    <div className="w-full max-w-xl bg-[#090e1a] border border-white/5 p-8 md:p-12 rounded-[3.5rem] shadow-2xl overflow-y-auto max-h-[95vh] custom-scrollbar">
+                        <div className="flex flex-col items-center gap-6 mb-12 text-center">
+                            <div className="p-6 bg-emerald-500 rounded-[2rem] text-black shadow-lg shadow-emerald-500/10"><i data-lucide="clover" className="w-10 h-10"></i></div>
+                            <h1 className="text-4xl font-black italic tracking-tighter text-white uppercase">RADLOT <span className="text-emerald-500 not-italic">PRO</span></h1>
+                        </div>
 
-  return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col lg:flex-row font-sans selection:bg-emerald-500/30">
-      
-      {/* Sidebar Corporativo */}
-      <aside className="w-full lg:w-80 bg-[#090e1a] border-b lg:border-r border-white/5 p-8 flex flex-col gap-10">
-        <div className="flex items-center gap-4 group">
-          <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg"><Clover className="text-black" size={28} strokeWidth={3} /></div>
-          <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
-        </div>
+                        <form onSubmit={handleAuth} className="space-y-6">
+                            {view === 'register' ? (
+                                <div className="space-y-5 fade-in">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Nome Completo</label><input type="text" onChange={e=>setAuthForm({...authForm, nome:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
+                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Apelido (Login)</label><input type="text" onChange={e=>setAuthForm({...authForm, apelido:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Nascimento</label><input type="date" onChange={e=>setAuthForm({...authForm, nascimento:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
+                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Gênero</label>
+                                            <select onChange={e=>setAuthForm({...authForm, sexo:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none">
+                                                <option value="masculino">Masculino</option>
+                                                <option value="feminino">Feminino</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Telefone</label><input type="tel" placeholder="(00) 00000-0000" onChange={e=>setAuthForm({...authForm, tel:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
+                                        <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Confirmar</label><input type="tel" onChange={e=>setAuthForm({...authForm, cTel:e.target.value})} className="w-full rounded-xl py-3 px-4 outline-none" required /></div>
+                                    </div>
+                                    <div className="h-px bg-white/5 my-2"></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <input type="email" placeholder="Seu melhor e-mail" onChange={e=>setAuthForm({...authForm, email:e.target.value})} className="w-full rounded-xl py-4 px-6 outline-none" required />
+                                        <input type="email" placeholder="Confirmar e-mail" onChange={e=>setAuthForm({...authForm, cEmail:e.target.value})} className="w-full rounded-xl py-4 px-6 outline-none" required />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <input type="password" placeholder="Senha de acesso" onChange={e=>setAuthForm({...authForm, pass:e.target.value})} className="w-full rounded-xl py-4 px-6 outline-none" required />
+                                        <input type="password" placeholder="Confirmar senha" onChange={e=>setAuthForm({...authForm, cPass:e.target.value})} className="w-full rounded-xl py-4 px-6 outline-none" required />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-6 fade-in">
+                                    <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Identificador (E-mail ou Apelido)</label><input type="text" onChange={e=>setAuthForm({...authForm, id:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none font-bold text-lg" required /></div>
+                                    <div className="space-y-1"><label className="text-[10px] uppercase font-black text-slate-500 ml-1 tracking-widest">Senha Profissional</label><input type="password" onChange={e=>setAuthForm({...authForm, pass:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none font-bold text-lg" required /></div>
+                                </div>
+                            )}
 
-        <nav className="flex flex-row lg:flex-col gap-3 overflow-x-auto pb-4 lg:pb-0">
-          {[
-            { id: 'gerador', icon: LayoutDashboard, label: 'Gerador' },
-            { id: 'cofre', icon: History, label: 'Cofre' },
-            { id: 'scanner', icon: ShieldCheck, label: 'Scanner' },
-            { id: 'perfil', icon: Settings, label: 'Perfil' },
-          ].map(item => (
-            <button key={item.id} onClick={()=>setTab(item.id)} className={`flex items-center gap-5 px-6 py-5 rounded-2xl transition-all w-full border ${tab === item.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-inner' : 'border-transparent text-slate-500 hover:bg-white/5'}`}>
-              <item.icon size={20} /> <span className="text-xs font-black uppercase tracking-widest">{item.label}</span>
-            </button>
-          ))}
-        </nav>
+                            {msg.text && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase text-center rounded-xl">{msg.text}</div>}
+                            
+                            <button type="submit" disabled={busy} className="w-full bg-emerald-600 hover:bg-emerald-500 py-6 rounded-3xl font-black uppercase text-sm tracking-[0.2em] text-black shadow-xl active:scale-95 transition-all">
+                                {busy ? <i data-lucide="refresh-cw" className="animate-spin w-5 h-5 mx-auto"></i> : 'ENTRAR NO SISTEMA'}
+                            </button>
+                            <div className="text-center pt-4 border-t border-white/5"><button type="button" onClick={()=>setView(view === 'login' ? 'register' : 'login')} className="text-slate-500 text-[11px] font-black uppercase tracking-widest hover:text-emerald-400">{view === 'login' ? 'Primeiro acesso? Registrar' : 'Já possui conta? Entrar'}</button></div>
+                        </form>
+                    </div>
+                </div>
+            );
 
-        <div className="mt-auto pt-8 border-t border-white/5 space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner">
-                {profile?.sexo === 'feminino' ? <CircleUser size={24} /> : <UserSquare size={24} />}
-            </div>
-            <div className="overflow-hidden">
-              <p className="font-black truncate text-white uppercase text-xs">@{profile?.apelido || 'Usuário'}</p>
-              <div className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60 italic">Online</p></div>
-            </div>
-          </div>
-          <button onClick={()=>signOut(auth)} className="w-full py-4 bg-red-500/5 text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-500/10 hover:bg-red-500 hover:text-white transition-all shadow-sm">Sair do Sistema</button>
-        </div>
-      </aside>
+            return (
+                <div className="min-h-screen flex flex-col lg:flex-row">
+                    <aside className="w-full lg:w-80 bg-[#090e1a] border-r border-white/5 p-8 flex flex-col gap-12">
+                        <div className="flex items-center gap-4 group">
+                            <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg"><i data-lucide="clover" className="w-6 h-6 text-black"></i></div>
+                            <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
+                        </div>
+                        <nav className="flex flex-row lg:flex-col gap-3 overflow-x-auto pb-4">
+                            {['gerador', 'cofre', 'scanner', 'perfil'].map(t => (
+                                <button key={t} onClick={()=>setTab(t)} className={`flex items-center gap-5 px-6 py-5 rounded-2xl w-full border text-xs font-black uppercase transition-all ${tab === t ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-inner' : 'border-transparent text-slate-500 hover:bg-white/5'}`}>{t}</button>
+                            ))}
+                        </nav>
+                        <div className="mt-auto pt-8 border-t border-white/5 space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner"><i data-lucide={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-8 h-8"></i></div>
+                                <div className="overflow-hidden"><p className="font-black text-white text-xs truncate">@{profile?.apelido || 'Usuário'}</p><p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-60 italic">Sessão Ativa</p></div>
+                            </div>
+                            <button onClick={()=>window.RadLotCore.api.signOut(window.RadLotCore.auth)} className="w-full py-4 bg-red-500/5 text-red-500 rounded-2xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all shadow-sm">Sair</button>
+                        </div>
+                    </aside>
 
-      <main className="flex-grow p-4 lg:p-12 max-w-7xl mx-auto w-full overflow-y-auto custom-scrollbar">
-        {tab === 'gerador' && (
-          <div className="space-y-10 animate-in fade-in duration-700">
-            <header className="flex flex-col lg:flex-row justify-between gap-8">
-              <div><h2 className="text-5xl font-black uppercase italic text-white tracking-tighter">Gerador Pro</h2><p className="text-sl
+                    <main className="flex-grow p-4 lg:p-12 overflow-y-auto custom-scrollbar">
+                        {tab === 'gerador' && (
+                            <div className="space-y-12 fade-in">
+                                <header className="flex flex-col lg:flex-row justify-between gap-10">
+                                    <div>
