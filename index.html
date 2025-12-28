@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RadLot PRO | Sistema de Gestão Maker</title>
+    <title>RadLot PRO | Gestão Maker Profissional</title>
     
     <!-- Bibliotecas Core -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -11,13 +11,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Biblioteca PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap');
         
-        /* Garantir que o ecrã ocupa a altura total e gere o scroll internamente */
         html, body, #root {
             height: 100%;
             margin: 0;
@@ -32,7 +30,7 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* Visibilidade dos Inputs - Letras Brancas para contraste profissional */
+        /* Contraste Profissional para Inputs */
         input, select {
             color: #ffffff !important;
             background-color: rgba(30, 41, 59, 0.7) !important;
@@ -43,17 +41,23 @@
             outline: none;
         }
         
-        /* Estilização da barra de rolagem personalizada */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
         
-        /* Animações de entrada */
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .icon-container svg { display: inline-block; vertical-align: middle; }
+        .icon-container { display: inline-flex; align-items: center; justify-content: center; }
+        
+        /* Layout Fixo */
+        .app-layout {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -77,7 +81,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Exportar utilitários para o contexto do React
         window.RadCore = {
             auth, db,
             api: { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider },
@@ -96,7 +99,6 @@
             sorte: { n: 'Dia de Sorte', api: 'diadesorte', max: 31, k: 7, color: '#f97316', hot: [10, 7, 23, 31, 9, 21, 15, 1, 14, 8] }
         };
 
-        // Componente de ícone resiliente para evitar erros no DOM
         const Icon = ({ name, className = "w-5 h-5" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
@@ -123,9 +125,10 @@
             const [showHeatHelp, setShowHeatHelp] = useState(false);
 
             const [authForm, setAuthForm] = useState({ id: '', pass: '', nome: '', apelido: '', tel: '', email: '', passReg: '', cPassReg: '', sexo: 'masculino' });
+            const [editForm, setEditForm] = useState({ nome: '', apelido: '', tel: '', sexo: '', oldPass: '', newPass: '', cNewPass: '' });
             const [apiData, setApiData] = useState({});
 
-            // Lógica de Logout por Inatividade
+            // Segurança: Logout por Inatividade
             useEffect(() => {
                 if (!user) return;
                 const countdown = setInterval(() => {
@@ -148,7 +151,6 @@
                 };
             }, [user]);
 
-            // Escuta do estado de autenticação inicial
             useEffect(() => {
                 const check = setInterval(() => {
                     if (window.RadCore) {
@@ -157,7 +159,11 @@
                             if (u) {
                                 try {
                                     const snap = await window.RadCore.dbOps.getDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', u.uid, 'profile', 'data'));
-                                    if (snap.exists()) setProfile(snap.data());
+                                    if (snap.exists()) {
+                                        const d = snap.data();
+                                        setProfile(d);
+                                        setEditForm({ ...d, oldPass: '', newPass: '', cNewPass: '' });
+                                    }
                                 } catch(e) {}
                                 setUser(u);
                             } else {
@@ -170,7 +176,6 @@
                 }, 100);
             }, []);
 
-            // Sincronização em tempo real do cofre de bilhetes
             useEffect(() => {
                 if (!user) return;
                 const q = window.RadCore.dbOps.collection(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault');
@@ -193,15 +198,40 @@
                         if (!email.includes('@')) {
                             const snap = await window.RadCore.dbOps.getDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', email.toLowerCase()));
                             if (snap.exists()) email = snap.data().email;
-                            else throw new Error("Usuário não encontrado.");
+                            else throw new Error("Usuário não cadastrado.");
                         }
                         await window.RadCore.api.signInWithEmailAndPassword(window.RadCore.auth, email, authForm.pass);
                     } else if (view === 'recovery') {
                         await window.RadCore.api.sendPasswordResetEmail(window.RadCore.auth, authForm.email);
-                        setMsg({ type: 'success', text: "E-mail de recuperação enviado com sucesso!" });
+                        setMsg({ type: 'success', text: "Link de recuperação enviado!" });
                         setTimeout(() => setView('login'), 3000);
                     }
-                } catch (err) { setMsg({ type: 'error', text: err.message || "Erro no acesso." }); }
+                } catch (err) { setMsg({ type: 'error', text: err.message || "Falha no acesso." }); }
+                setIsBusy(false);
+            };
+
+            const handleProfileUpdate = async (e) => {
+                e.preventDefault();
+                setIsBusy(true);
+                setMsg({ type: '', text: '' });
+                try {
+                    const ref = window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'profile', 'data');
+                    await window.RadCore.dbOps.updateDoc(ref, {
+                        nome: editForm.nome,
+                        apelido: editForm.apelido,
+                        telefone: editForm.telefone,
+                        sexo: editForm.sexo
+                    });
+                    if (editForm.newPass) {
+                        const cred = window.RadCore.api.EmailAuthProvider.credential(user.email, editForm.oldPass);
+                        await window.RadCore.api.reauthenticateWithCredential(user, cred);
+                        await window.RadCore.api.updatePassword(user, editForm.newPass);
+                    }
+                    setProfile({ ...profile, ...editForm });
+                    setMsg({ type: 'success', text: "Perfil atualizado!" });
+                } catch (err) {
+                    setMsg({ type: 'error', text: "Falha ao salvar. Verifique a senha atual." });
+                }
                 setIsBusy(false);
             };
 
@@ -237,14 +267,16 @@
                     const r = await fetch(`https://loteriascaixa-api.herokuapp.com/api/${MODS[activeLotto].api}/latest`);
                     const d = await r.json();
                     setApiData(prev => ({ ...prev, [activeLotto]: d }));
-                } catch (e) { setMsg({ type: 'error', text: "API Indisponível." }); }
+                } catch (e) { setMsg({ type: 'error', text: "Falha na sincronização." }); }
                 setIsBusy(false);
             };
 
             const imprimirPDF = (j) => {
-                const { jsPDF } = window.jspdf.jspdf;
+                if (!window.jspdf) return;
+                const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ format: [80, 160], unit: 'mm' });
                 const config = MODS[j.tipo || activeLotto];
+                const numsArray = Array.isArray(j) ? j : j.numbers || j.numeros;
                 
                 doc.setFillColor(15, 23, 42);
                 doc.rect(0, 0, 80, 25, 'F');
@@ -258,17 +290,13 @@
                 doc.setFontSize(10);
                 doc.text(`MODALIDADE: ${config.n.toUpperCase()}`, 10, 35);
                 doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 10, 42);
-                
-                doc.setLineWidth(0.3);
                 doc.line(10, 48, 70, 48);
                 
                 doc.setFontSize(12);
-                const nums = (j.numeros || j).map(n => n.toString().padStart(2, '0')).join(' ');
-                doc.text(nums, 40, 65, { align: 'center', maxWidth: 60 });
+                const numsStr = numsArray.map(n => n.toString().padStart(2, '0')).join(' ');
+                doc.text(numsStr, 40, 65, { align: 'center', maxWidth: 60 });
                 
-                doc.setFontSize(7);
-                doc.text("BILHETE GERADO POR ANÁLISE ESTATÍSTICA", 40, 150, { align: 'center' });
-                doc.save(`RadLot_Bilhete_${Date.now()}.pdf`);
+                doc.save(`Bilhete_RadLot_${Date.now()}.pdf`);
             };
 
             const formatTimer = (s) => {
@@ -277,14 +305,14 @@
                 return `${min}:${sec < 10 ? '0' : ''}${sec}`;
             };
 
-            if (!init) return <div className="min-h-screen flex items-center justify-center bg-[#020617] text-emerald-500"><Icon name="refresh-cw" className="w-12 h-12 animate-spin" /></div>;
+            if (!init) return <div className="min-h-screen bg-[#020617] flex items-center justify-center"><Icon name="refresh-cw" className="w-12 h-12 animate-spin text-emerald-500" /></div>;
 
             if (!user) return (
                 <div className="h-full overflow-y-auto custom-scrollbar flex items-center justify-center p-4 bg-[#020617]">
                     <div className="w-full max-w-xl bg-[#090e1a] border border-white/5 p-10 rounded-[3rem] shadow-2xl my-10">
                         <div className="text-center mb-10">
                             <div className="p-5 bg-emerald-500 rounded-2xl w-fit mx-auto mb-6 text-black shadow-xl"><Icon name="clover" className="w-10 h-10" /></div>
-                            <h1 className="text-4xl font-extrabold uppercase italic tracking-tighter text-white leading-none">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
+                            <h1 className="text-4xl font-extrabold uppercase italic tracking-tighter text-white">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
                         </div>
                         <form onSubmit={handleAuth} className="space-y-6">
                             {view === 'register' ? (
@@ -293,7 +321,7 @@
                                         <input type="text" placeholder="Nome Completo" onChange={e=>setAuthForm({...authForm, nome:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
                                         <input type="text" placeholder="Apelido" onChange={e=>setAuthForm({...authForm, apelido:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 text-white font-medium">
+                                    <div className="grid grid-cols-2 gap-4 text-white">
                                         <input type="tel" placeholder="Telefone" onChange={e=>setAuthForm({...authForm, tel:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none" required />
                                         <select onChange={e=>setAuthForm({...authForm, sexo:e.target.value})} className="w-full py-3 px-4 rounded-xl outline-none bg-[#090e1a]">
                                             <option value="masculino">Masculino</option>
@@ -308,16 +336,14 @@
                                 </div>
                             ) : view === 'login' ? (
                                 <div className="space-y-4 fade-in">
-                                    <input type="text" placeholder="E-mail ou Apelido" onChange={e=>setAuthForm({...authForm, id:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg text-white" required />
-                                    <input type="password" placeholder="Senha" onChange={e=>setAuthForm({...authForm, pass:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg text-white" required />
-                                    <div className="text-right">
-                                        <button type="button" onClick={()=>setView('recovery')} className="text-[10px] text-slate-500 font-bold uppercase hover:text-emerald-400 tracking-widest">Esqueceu a senha?</button>
-                                    </div>
+                                    <input type="text" placeholder="E-mail ou Apelido" onChange={e=>setAuthForm({...authForm, id:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg text-white shadow-inner" required />
+                                    <input type="password" placeholder="Senha" onChange={e=>setAuthForm({...authForm, pass:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg text-white shadow-inner" required />
+                                    <div className="text-right"><button type="button" onClick={()=>setView('recovery')} className="text-[10px] text-slate-500 font-bold uppercase hover:text-emerald-400">Esqueceu a senha?</button></div>
                                 </div>
                             ) : (
                                 <div className="space-y-4 fade-in">
-                                    <p className="text-xs text-slate-400 text-center mb-4 uppercase font-black tracking-widest">Recuperação de Acesso</p>
-                                    <input type="email" placeholder="Seu e-mail cadastrado" onChange={e=>setAuthForm({...authForm, email:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg text-white" required />
+                                    <p className="text-xs text-slate-400 text-center mb-4 uppercase font-black tracking-widest">Recuperação</p>
+                                    <input type="email" placeholder="Seu e-mail cadastrado" onChange={e=>setAuthForm({...authForm, email:e.target.value})} className="w-full py-5 px-6 rounded-2xl outline-none font-bold text-lg text-white shadow-inner" required />
                                 </div>
                             )}
 
@@ -331,9 +357,7 @@
                                 <button type="button" onClick={()=>setView(view==='login'?'register':'login')} className="text-slate-500 text-[10px] font-black uppercase tracking-widest hover:text-emerald-400">
                                     {view==='login'?'Não tem conta? Criar conta':'Já possui conta? Entrar'}
                                 </button>
-                                {view === 'recovery' && (
-                                    <button type="button" onClick={()=>setView('login')} className="block mx-auto mt-2 text-slate-500 text-[10px] font-black uppercase hover:text-white">Voltar</button>
-                                )}
+                                {view === 'recovery' && <button type="button" onClick={()=>setView('login')} className="block mx-auto mt-2 text-slate-500 text-[10px] font-black uppercase">Voltar</button>}
                             </div>
                         </form>
                     </div>
@@ -341,183 +365,193 @@
             );
 
             return (
-                <div className="h-full flex flex-col lg:flex-row bg-[#020617] overflow-hidden">
-                    {/* Sidebar fixa lateral */}
-                    <aside className="w-full lg:w-80 bg-[#090e1a] border-r border-white/5 p-8 flex flex-col gap-10 flex-shrink-0">
+                <div className="app-layout">
+                    {/* Menu Lateral Fixo */}
+                    <aside className="w-80 bg-[#090e1a] border-r border-white/5 p-8 flex flex-col gap-10 flex-shrink-0 h-full">
                         <div className="flex items-center gap-4 group">
-                            <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg"><Icon name="clover" className="text-black" /></div>
+                            <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg shadow-emerald-500/10"><Icon name="clover" className="text-black" /></div>
                             <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
                         </div>
-                        <nav className="flex flex-row lg:flex-col gap-3 overflow-x-auto pb-4 lg:pb-0 custom-scrollbar">
+                        <nav className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2">
                             {[
                                 { id: 'gerador', icon: 'layout-dashboard', label: 'Gerador' },
                                 { id: 'cofre', icon: 'history', label: 'Cofre' },
                                 { id: 'scanner', icon: 'shield-check', label: 'Scanner' },
                                 { id: 'perfil', icon: 'settings', label: 'Perfil' }
                             ].map(item => (
-                                <button key={item.id} onClick={()=>setTab(item.id)} className={`flex items-center gap-5 px-6 py-5 rounded-2xl w-full border text-xs font-black uppercase transition-all flex-shrink-0 ${tab === item.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-inner' : 'border-transparent text-slate-500 hover:bg-white/5'}`}>
+                                <button key={item.id} onClick={()=>setTab(item.id)} className={`flex items-center gap-5 px-6 py-5 rounded-2xl w-full border text-xs font-black uppercase transition-all ${tab === item.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-inner' : 'border-transparent text-slate-500 hover:bg-white/5'}`}>
                                     <Icon name={item.icon} className="w-5 h-5" />
                                     <span>{item.label}</span>
                                 </button>
                             ))}
                         </nav>
                         <div className="mt-auto pt-8 border-t border-white/5">
-                            <button onClick={()=>window.RadCore.api.signOut(window.RadCore.auth)} className="w-full py-4 bg-red-500/5 text-red-500 rounded-2xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all shadow-sm">Sair do Sistema</button>
+                            <button onClick={()=>window.RadCore.api.signOut(window.RadCore.auth)} className="w-full py-4 bg-red-500/5 text-red-500 rounded-2xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all shadow-sm">Terminar Sessão</button>
                         </div>
                     </aside>
 
-                    <main className="flex-grow relative h-full overflow-hidden flex flex-col">
-                        {/* Header Fixo Superior Direito com status de inatividade */}
-                        <div className="absolute top-8 right-12 flex items-center gap-6 z-50 pointer-events-none">
-                            <div className="text-right pointer-events-auto font-black uppercase">
-                                <p className="text-sm text-white tracking-tighter">{profile?.nome || 'Utilizador'}</p>
-                                <div className="flex items-center justify-end gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    <p className="text-[10px] text-emerald-500 tracking-widest italic opacity-80">Ativo: {formatTimer(timer)}</p>
+                    {/* Espaço de Trabalho */}
+                    <main className="flex-grow flex flex-col relative h-full bg-[#020617] overflow-hidden">
+                        
+                        {/* HEADER ESTATICO - FIXO NO TOPO */}
+                        <div className="sticky top-0 left-0 w-full h-24 bg-[#020617]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-end px-12 z-50">
+                            <div className="flex items-center gap-6">
+                                <div className="text-right">
+                                    <p className="text-sm font-black text-white uppercase tracking-tighter leading-none mb-1">{profile?.nome || 'Operador RadLot'}</p>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                                        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest italic opacity-80 leading-none">Online: {formatTimer(timer)}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner pointer-events-auto">
-                                <Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-8 h-8" />
+                                <div className="w-12 h-12 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner">
+                                    <Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-7 h-7" />
+                                </div>
                             </div>
                         </div>
 
-                        {/* Área de Conteúdo com Scroll Individual */}
-                        <div className="flex-grow overflow-y-auto custom-scrollbar p-6 lg:p-16 pt-32 lg:pt-36 pb-24">
-                            {tab === 'gerador' && (
-                                <div className="space-y-12 fade-in max-w-6xl mx-auto">
-                                    <header className="flex flex-col lg:flex-row justify-between gap-10">
-                                        <div><h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Processador de Dezenas</h2><p className="text-slate-500 text-sm mt-2 font-medium italic opacity-80">Algoritmo profissional baseado em histórico real 2009-2025.</p></div>
-                                        <div className="flex flex-wrap gap-2 p-1.5 bg-[#0c1220] rounded-[2rem] border border-white/5 shadow-2xl justify-center h-fit">
-                                            {Object.keys(MODS).map(k => (
-                                                <button key={k} onClick={()=>{setActiveLotto(k);setGame(null);}} className={`px-6 py-3 rounded-[1.5rem] text-[11px] font-black uppercase transition-all ${activeLotto === k ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-white'}`}>{MODS[k].n}</button>
-                                            ))}
-                                        </div>
-                                    </header>
-
-                                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
-                                        <div className="xl:col-span-2 bg-[#0c1220] border border-white/5 rounded-[4rem] p-10 lg:p-20 flex flex-col items-center justify-center text-center shadow-2xl min-h-[500px]">
-                                            {game ? (
-                                                <div className="space-y-12 w-full fade-in">
-                                                    <div className="flex flex-wrap justify-center gap-5">{game.map((n, i) => <div key={i} className="w-16 h-16 lg:w-24 lg:h-24 rounded-[2rem] bg-[#1e293b] border-2 border-emerald-500/30 flex items-center justify-center text-white font-black text-2xl lg:text-5xl shadow-2xl">{n.toString().padStart(2,'0')}</div>)}</div>
-                                                    <div className="grid grid-cols-2 gap-8 max-w-md mx-auto pt-10 border-t border-white/5 font-black uppercase text-[10px] text-slate-500">
-                                                        <div><p>Paridade</p><p className="text-2xl text-emerald-400 italic">{game.filter(n=>n%2===0).length}P / {game.length-game.filter(n=>n%2===0).length}Í</p></div>
-                                                        <div><p>Soma</p><p className="text-2xl text-emerald-400 italic">{game.reduce((a,b)=>a+b,0)}</p></div>
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-4 justify-center pt-6">
-                                                        <button onClick={saveGame} className="px-10 py-6 bg-emerald-600 hover:bg-emerald-500 rounded-3xl font-black text-xs uppercase tracking-widest text-black shadow-xl active:scale-95 transition-all flex items-center gap-2">
-                                                            <Icon name="save" /> SALVAR
-                                                        </button>
-                                                        <button onClick={() => imprimirPDF(game)} className="px-10 py-6 bg-blue-600 hover:bg-blue-500 rounded-3xl font-black text-xs uppercase tracking-widest text-white shadow-xl active:scale-95 transition-all flex items-center gap-2">
-                                                            <Icon name="printer" /> IMPRIMIR
-                                                        </button>
-                                                        <button onClick={()=>setGame(null)} className="px-10 py-6 bg-white/5 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10">DESCARTAR</button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-10">
-                                                    <div className="w-40 h-40 bg-emerald-500/5 rounded-[4rem] flex items-center justify-center mx-auto border-2 border-dashed border-emerald-500/20"><Icon name="zap" className="w-12 h-12 text-emerald-500 animate-pulse" /></div>
-                                                    <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">Otimização de Amostragem</h3>
-                                                    <button onClick={generate} disabled={isBusy} className="px-16 py-8 bg-emerald-600 hover:bg-emerald-500 rounded-[2.5rem] font-black text-black uppercase tracking-[0.4em] text-sm shadow-xl active:scale-95 border-b-8 border-emerald-900 transition-all">RODAR SISTEMA</button>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="bg-[#0c1220] rounded-[3rem] p-10 border border-white/5 shadow-inner">
-                                            <div className="flex justify-between items-center mb-8"><h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-3"><Icon name="layout-grid" className="text-emerald-500" /> Grade de Dispersão</h4><button onClick={()=>setShowHeatHelp(!showHeatHelp)} className="text-slate-500 hover:text-emerald-500 pointer-events-auto"><Icon name="help-circle" /></button></div>
-                                            {showHeatHelp && <div className="mb-6 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-[10px] text-emerald-400 leading-relaxed italic fade-in">A Grade de Dispersão visualiza o espaço ocupado no volante oficial. Uma dispersão equilibrada ajuda a evitar agrupamentos extremos de números que possuem baixa frequência estatística em sorteios reais.</div>}
-                                            <div className="grid grid-cols-5 gap-2 aspect-square p-4 bg-black/40 rounded-[2.5rem] border border-white/5 shadow-inner">{Array.from({length: 25}).map((_,i)=><div key={i} className={`rounded-xl transition-all duration-700 ${game?.includes(i+1)?'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]':'bg-white/5 opacity-10'}`}></div>)}</div>
-                                            <p className="text-[9px] text-slate-600 uppercase font-black text-center mt-8 tracking-widest italic opacity-50">Distribuição Geo-Espacial</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {tab === 'perfil' && (
-                                <div className="space-y-12 fade-in max-w-4xl mx-auto pb-20">
-                                    <h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Meu Cadastro</h2>
-                                    <div className="bg-[#0c1220] border border-white/5 p-12 rounded-[4rem] shadow-2xl">
-                                        <form onSubmit={async (e)=>{e.preventDefault();setIsBusy(true);try{const ref=window.RadCore.dbOps.doc(window.RadCore.db,'artifacts','radlot-pro-main','users',user.uid,'profile','data');await window.RadCore.dbOps.updateDoc(ref,profile);setMsg({type:'success',text:'Perfil atualizado!'});}catch(err){setMsg({type:'error',text:'Falha ao salvar.'});}setIsBusy(false);}} className="space-y-10">
-                                            <div className="flex flex-col md:flex-row items-center gap-10 pb-10 border-b border-white/5">
-                                                <div className="w-32 h-32 rounded-[2rem] bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner"><Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-16 h-16" /></div>
-                                                <div className="space-y-4 text-center md:text-left text-white uppercase font-black tracking-widest">
-                                                    <label className="text-[10px] text-slate-500">Gênero e Avatar</label>
-                                                    <div className="flex gap-4">
-                                                        <button type="button" onClick={()=>setProfile({...profile, sexo:'masculino'})} className={`px-10 py-3 rounded-2xl text-[10px] border transition-all ${profile?.sexo === 'masculino'?'bg-emerald-500 border-emerald-400 text-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>Masculino</button>
-                                                        <button type="button" onClick={()=>setProfile({...profile, sexo:'feminino'})} className={`px-10 py-3 rounded-2xl text-[10px] border transition-all ${profile?.sexo === 'feminino'?'bg-emerald-500 border-emerald-400 text-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>Feminino</button>
-                                                    </div>
-                                                </div>
+                        {/* ÁREA DE ROLAGEM INDEPENDENTE */}
+                        <div className="flex-grow overflow-y-auto custom-scrollbar p-6 lg:p-16 pt-10 pb-24">
+                            <div className="max-w-6xl mx-auto w-full">
+                                {tab === 'gerador' && (
+                                    <div className="space-y-12 fade-in">
+                                        <header className="flex flex-col lg:flex-row justify-between gap-10">
+                                            <div><h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Processador de Dezenas</h2><p className="text-slate-500 text-sm mt-2 font-medium italic">Matriz estatística real 2009-2025.</p></div>
+                                            <div className="flex flex-wrap gap-2 p-1.5 bg-[#0c1220] rounded-[2rem] border border-white/5 shadow-2xl justify-center h-fit">
+                                                {Object.keys(MODS).map(k => (
+                                                    <button key={k} onClick={()=>{setActiveLotto(k);setGame(null);}} className={`px-6 py-3 rounded-[1.5rem] text-[11px] font-black uppercase transition-all ${activeLotto === k ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-white'}`}>{MODS[k].n}</button>
+                                                ))}
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-white font-medium">
-                                                <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Nome Permanente</label><input type="text" value={profile?.nome || ''} onChange={e=>setProfile({...profile, nome:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none shadow-inner" required /></div>
-                                                <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Apelido (Login)</label><input type="text" value={profile?.apelido || ''} onChange={e=>setProfile({...profile, apelido:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none shadow-inner" required /></div>
-                                            </div>
-                                            <div className="space-y-2 text-white font-medium"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Telefone de Contato</label><input type="tel" value={profile?.telefone || ''} onChange={e=>setProfile({...profile, telefone:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none shadow-inner" required /></div>
-                                            <button type="submit" disabled={isBusy} className="w-full py-8 bg-emerald-600 hover:bg-emerald-500 text-black font-black rounded-[2rem] uppercase text-sm tracking-[0.2em] shadow-2xl active:scale-95 border-b-8 border-emerald-900 transition-all">SALVAR ALTERAÇÕES</button>
-                                            {msg.text && <div className={`p-6 rounded-[2rem] border text-[10px] font-black uppercase text-center flex items-center justify-center gap-3 shadow-lg ${msg.type==='success'?'bg-emerald-500/10 text-emerald-400 border-emerald-500/20':'bg-red-500/10 text-red-400 border-red-500/20'}`}>{msg.text}</div>}
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
+                                        </header>
 
-                            {tab === 'cofre' && (
-                                <div className="space-y-12 fade-in max-w-6xl mx-auto pb-20 text-white font-black">
-                                    <h2 className="text-5xl font-black uppercase italic tracking-tighter">Meu Cofre</h2>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                                        {vault.length === 0 ? <div className="col-span-full py-48 text-center opacity-10"><Icon name="database" className="w-24 h-24 mx-auto mb-8 text-white" /><p className="text-2xl uppercase font-black tracking-[0.8em]">Vazio</p></div> : 
-                                            vault.map(j => (
-                                                <div key={j.id} className="bg-[#0c1220] border border-white/5 p-10 rounded-[3.5rem] flex flex-col gap-10 shadow-2xl relative group overflow-hidden">
-                                                    <div className="flex justify-between items-start relative z-10">
-                                                        <div className="px-6 py-2.5 rounded-2xl text-[10px] font-black text-white uppercase shadow-2xl" style={{backgroundColor:MODS[j.tipo]?.color}}>{MODS[j.tipo]?.n}</div>
-                                                        <div className="flex gap-2">
-                                                            <button onClick={() => imprimirPDF(j)} className="p-4 bg-white/5 text-slate-400 rounded-3xl hover:text-blue-400 transition-all shadow-inner"><Icon name="printer" /></button>
-                                                            <button onClick={()=>window.RadCore.dbOps.deleteDoc(window.RadCore.dbOps.doc(window.RadCore.db,'artifacts','radlot-pro-main','users',user.uid,'vault',j.id))} className="p-4 bg-white/5 text-slate-400 rounded-3xl hover:text-red-500 transition-all shadow-inner"><Icon name="trash-2" /></button>
+                                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
+                                            <div className="xl:col-span-2 bg-[#0c1220] border border-white/5 rounded-[4rem] p-10 lg:p-20 flex flex-col items-center justify-center text-center shadow-2xl min-h-[550px] relative overflow-hidden">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
+                                                    <div className={`h-full bg-emerald-500 transition-all duration-1000 ${isBusy ? 'w-full opacity-100' : 'w-0 opacity-0'}`}></div>
+                                                </div>
+                                                {game ? (
+                                                    <div className="space-y-12 w-full fade-in">
+                                                        <div className="flex flex-wrap justify-center gap-5">{game.map((n, i) => <div key={i} className="w-16 h-16 lg:w-24 lg:h-24 rounded-[2rem] bg-[#1e293b] border-2 border-emerald-500/30 flex items-center justify-center text-white font-black text-2xl lg:text-5xl shadow-2xl">{n.toString().padStart(2,'0')}</div>)}</div>
+                                                        <div className="grid grid-cols-2 gap-8 max-w-md mx-auto pt-10 border-t border-white/5 font-black uppercase text-[10px] text-slate-500">
+                                                            <div><p>Paridade</p><p className="text-2xl text-emerald-400 italic">{game.filter(n=>n%2===0).length}P / {game.length-game.filter(n=>n%2===0).length}Í</p></div>
+                                                            <div><p>Soma</p><p className="text-2xl text-emerald-400 italic">{game.reduce((a,b)=>a+b,0)}</p></div>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-4 justify-center pt-6">
+                                                            <button onClick={saveGame} className="px-10 py-6 bg-emerald-600 hover:bg-emerald-500 rounded-3xl font-black text-xs uppercase tracking-widest text-black shadow-xl active:scale-95 transition-all flex items-center gap-2"><Icon name="save" /> SALVAR</button>
+                                                            <button onClick={() => imprimirPDF(game)} className="px-10 py-6 bg-blue-600 hover:bg-blue-500 rounded-3xl font-black text-xs uppercase tracking-widest text-white shadow-xl active:scale-95 transition-all flex items-center gap-2"><Icon name="printer" /> IMPRIMIR</button>
+                                                            <button onClick={()=>setGame(null)} className="px-10 py-6 bg-white/5 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10">LIMPAR</button>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-4 relative z-10">{j.numeros.map((n, i) => <span key={i} className="w-14 h-14 flex items-center justify-center bg-black/60 rounded-[1.5rem] text-2xl font-mono font-black text-emerald-400 border border-emerald-500/10 shadow-2xl">{n.toString().padStart(2, '0')}</span>)}</div>
-                                                    <div className="flex justify-between items-center text-[11px] text-slate-600 font-black border-t border-white/5 pt-8 uppercase tracking-widest relative z-10"><span>Soma: {j.stats?.soma}</span><span>{new Date(j.criadoEm?.seconds * 1000).toLocaleDateString('pt-BR')}</span></div>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
-                                </div>
-                            )}
+                                                ) : (
+                                                    <div className="space-y-10">
+                                                        <div className="w-40 h-40 bg-emerald-500/5 rounded-[4rem] flex items-center justify-center mx-auto border-2 border-dashed border-emerald-500/20"><Icon name="zap" className="w-12 h-12 text-emerald-500 animate-pulse" /></div>
+                                                        <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white uppercase">Otimização de Amostragem</h3>
+                                                        <button onClick={generate} disabled={isBusy} className="px-16 py-8 bg-emerald-600 hover:bg-emerald-500 rounded-[2.5rem] font-black text-black uppercase tracking-[0.4em] text-sm shadow-xl active:scale-95 border-b-8 border-emerald-900 transition-all">PROCESSAR AGORA</button>
+                                                    </div>
+                                                )}
+                                            </div>
 
-                            {tab === 'scanner' && (
-                                <div className="space-y-12 fade-in max-w-6xl mx-auto pb-20 text-white">
-                                    <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-                                        <div><h2 className="text-5xl font-black uppercase italic tracking-tighter">Conferência Automática</h2><p className="text-slate-500 text-sm mt-2 font-medium italic opacity-80 uppercase tracking-widest">Sincronização Oficial Caixa.</p></div>
-                                        <button onClick={syncOfficial} disabled={isBusy} className="px-12 py-8 bg-emerald-500/10 border border-emerald-500/20 rounded-[3rem] text-emerald-400 font-black uppercase text-xs tracking-widest flex items-center gap-5 hover:bg-emerald-500/20 shadow-2xl">{isBusy ? <Icon name="refresh-cw" className="animate-spin w-6 h-6" /> : <Icon name="globe" className="w-6 h-6" />} SINCRONIZAR</button>
-                                    </header>
-                                    {apiData[activeLotto] && (
-                                        <div className="bg-[#0c1220] border border-white/5 rounded-[4rem] p-12 lg:p-24 flex flex-col items-center gap-16 shadow-2xl relative overflow-hidden animate-pop">
-                                            <div className="text-center space-y-4 relative z-10 font-black uppercase"><h3 className="text-[16px] text-emerald-500 tracking-[0.8em]">Concurso Oficial #{apiData[activeLotto].concurso}</h3><p className="text-slate-500 text-sm opacity-60">{apiData[activeLotto].data}</p></div>
-                                            <div className="flex flex-wrap justify-center gap-6 lg:gap-10 relative z-10">{apiData[activeLotto].dezenas.map((n, i) => <div key={i} className="w-16 h-16 lg:w-32 lg:h-32 rounded-[2.5rem] bg-emerald-500 text-black flex items-center justify-center font-black text-2xl lg:text-7xl shadow-lg border-4 border-emerald-400/50">{n}</div>)}</div>
-                                            
-                                            <div className="w-full space-y-10 pt-10 border-t border-white/5">
-                                                <h4 className="text-[10px] text-slate-500 uppercase tracking-[0.4em] text-center font-black">Resultados do Seu Cofre</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-                                                    {vault.filter(v => v.tipo === activeLotto).map(j => {
-                                                        const drawnNums = apiData[activeLotto].dezenas.map(Number);
-                                                        const hits = j.numeros.filter(n => drawnNums.includes(n)).length;
-                                                        const isWinner = hits >= (j.tipo === 'facil' ? 11 : 4);
-                                                        return (
-                                                            <div key={j.id} className={`p-6 rounded-[2rem] border transition-all ${isWinner ? 'bg-emerald-500/10 border-emerald-500/40 animate-pulse' : 'bg-white/5 border-white/5 opacity-60'}`}>
-                                                                <div className="flex justify-between items-center mb-4"><span className="text-[10px] text-slate-500 uppercase font-black">Bilhete</span><span className={`px-2 py-0.5 rounded text-[10px] font-black ${isWinner ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-400'}`}>{hits} ACERTOS</span></div>
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {j.numeros.map((n, idx) => {
-                                                                        const isHit = drawnNums.includes(n);
-                                                                        return <span key={idx} className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-mono font-black border ${isHit ? 'bg-emerald-500 border-emerald-400 text-black shadow-lg shadow-emerald-500/50' : 'bg-black/20 border-white/5 text-slate-700'}`}>{n.toString().padStart(2, '0')}</span>
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
+                                            <div className="bg-[#0c1220] rounded-[3rem] p-10 border border-white/5 shadow-inner h-fit">
+                                                <div className="flex justify-between items-center mb-8"><h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-3"><Icon name="layout-grid" className="text-emerald-500" /> Grade de Dispersão</h4><button onClick={()=>setShowHeatHelp(!showHeatHelp)} className="text-slate-500 hover:text-emerald-500 pointer-events-auto"><Icon name="help-circle" /></button></div>
+                                                {showHeatHelp && <div className="mb-6 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-[10px] text-emerald-400 leading-relaxed italic fade-in">A Grade de Dispersão analisa a distribuição física das dezenas no bilhete. Matemáticamente, sorteios com maior dispersão espacial possuem uma probabilidade de ocorrência superior a jogos excessivamente agrupados.</div>}
+                                                <div className="grid grid-cols-5 gap-2 aspect-square p-4 bg-black/40 rounded-[2.5rem] border border-white/5 shadow-inner">{Array.from({length: 25}).map((_,i)=><div key={i} className={`rounded-xl transition-all duration-700 ${game?.includes(i+1)?'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]':'bg-white/5 opacity-10'}`}></div>)}</div>
+                                                <p className="text-[9px] text-slate-600 uppercase font-black text-center mt-8 tracking-widest italic opacity-50">Distribuição Geo-Espacial</p>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            )}
+                                    </div>
+                                )}
+
+                                {tab === 'perfil' && (
+                                    <div className="space-y-12 fade-in max-w-4xl mx-auto">
+                                        <h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Editar Perfil</h2>
+                                        <div className="bg-[#0c1220] border border-white/5 p-12 rounded-[4rem] shadow-2xl">
+                                            <form onSubmit={handleProfileUpdate} className="space-y-10">
+                                                <div className="flex flex-col md:flex-row items-center gap-10 pb-10 border-b border-white/5">
+                                                    <div className="w-32 h-32 rounded-[2rem] bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner"><Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-16 h-16" /></div>
+                                                    <div className="space-y-4 text-center md:text-left text-white uppercase font-black tracking-widest">
+                                                        <label className="text-[10px] text-slate-500">Avatar Maker e Gênero</label>
+                                                        <div className="flex gap-4">
+                                                            <button type="button" onClick={()=>setEditForm({...editForm, sexo:'masculino'})} className={`px-10 py-3 rounded-2xl text-[10px] border transition-all ${editForm.sexo === 'masculino'?'bg-emerald-500 border-emerald-400 text-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>Masculino</button>
+                                                            <button type="button" onClick={()=>setEditForm({...editForm, sexo:'feminino'})} className={`px-10 py-3 rounded-2xl text-[10px] border transition-all ${editForm.sexo === 'feminino'?'bg-emerald-500 border-emerald-400 text-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>Feminino</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-white font-medium">
+                                                    <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Nome Permanente</label><input type="text" value={editForm.nome} onChange={e=>setEditForm({...editForm, nome:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none shadow-inner" required /></div>
+                                                    <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Apelido Profissional</label><input type="text" value={editForm.apelido} onChange={e=>setEditForm({...editForm, apelido:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none shadow-inner" required /></div>
+                                                </div>
+                                                <div className="space-y-2 text-white font-medium"><label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Telefone de Contato</label><input type="tel" value={editForm.telefone} onChange={e=>setEditForm({...editForm, telefone:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none shadow-inner" required /></div>
+                                                <div className="pt-10 border-t border-white/5 space-y-6">
+                                                    <h4 className="text-xs font-black uppercase text-emerald-500 flex items-center gap-2 italic"><Icon name="lock" /> Alterar Credencial</h4>
+                                                    <input type="password" placeholder="Senha Atual (Para Validar)" value={editForm.oldPass} onChange={e=>setEditForm({...editForm, oldPass:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none text-white font-medium shadow-inner" />
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <input type="password" placeholder="Nova Senha" value={editForm.newPass} onChange={e=>setEditForm({...editForm, newPass:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none text-white font-medium shadow-inner" />
+                                                        <input type="password" placeholder="Confirmar Nova" value={editForm.cNewPass} onChange={e=>setEditForm({...editForm, cNewPass:e.target.value})} className="w-full rounded-2xl py-5 px-6 outline-none text-white font-medium shadow-inner" />
+                                                    </div>
+                                                </div>
+                                                <button type="submit" disabled={isBusy} className="w-full py-8 bg-emerald-600 hover:bg-emerald-500 text-black font-black rounded-[2rem] uppercase text-sm tracking-[0.2em] shadow-2xl active:scale-95 border-b-8 border-emerald-900 transition-all">SALVAR ALTERAÇÕES</button>
+                                                {msg.text && <div className={`p-6 rounded-[2rem] border text-[10px] font-black uppercase text-center ${msg.type==='success'?'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-lg':'bg-red-500/10 text-red-400 border-red-500/20'}`}>{msg.text}</div>}
+                                            </form>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tab === 'cofre' && (
+                                    <div className="space-y-12 fade-in max-w-6xl mx-auto text-white font-black">
+                                        <h2 className="text-5xl font-black uppercase italic tracking-tighter">Meu Cofre</h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 text-left">
+                                            {vault.length === 0 ? <div className="col-span-full py-48 text-center opacity-10"><Icon name="database" className="w-24 h-24 mx-auto mb-8 text-white" /><p className="text-2xl uppercase font-black tracking-[0.8em]">Vault Deserto</p></div> : 
+                                                vault.map(j => (
+                                                    <div key={j.id} className="bg-[#0c1220] border border-white/5 p-10 rounded-[3.5rem] flex flex-col gap-10 shadow-2xl relative group overflow-hidden">
+                                                        <div className="flex justify-between items-start relative z-10">
+                                                            <div className="px-6 py-2.5 rounded-2xl text-[10px] font-black text-white uppercase shadow-2xl" style={{backgroundColor:MODS[j.tipo]?.color}}>{MODS[j.tipo]?.n}</div>
+                                                            <div className="flex gap-2">
+                                                                <button onClick={() => imprimirPDF(j)} className="p-4 bg-white/5 text-slate-400 rounded-3xl hover:text-blue-400 transition-all shadow-inner"><Icon name="printer" /></button>
+                                                                <button onClick={()=>window.RadCore.dbOps.deleteDoc(window.RadCore.dbOps.doc(window.RadCore.db,'artifacts','radlot-pro-main','users',user.uid,'vault',j.id))} className="p-4 bg-white/5 text-slate-400 rounded-3xl hover:text-red-500 transition-all shadow-inner"><Icon name="trash-2" /></button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-4 relative z-10">{j.numeros.map((n, i) => <span key={i} className="w-14 h-14 flex items-center justify-center bg-black/60 rounded-[1.5rem] text-2xl font-mono font-black text-emerald-400 border border-emerald-500/10 shadow-2xl">{n.toString().padStart(2, '0')}</span>)}</div>
+                                                        <div className="flex justify-between items-center text-[11px] text-slate-600 font-black border-t border-white/5 pt-8 uppercase tracking-widest relative z-10"><span>Soma: {j.stats?.soma}</span><span>{new Date(j.criadoEm?.seconds * 1000).toLocaleDateString('pt-BR')}</span></div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tab === 'scanner' && (
+                                    <div className="space-y-12 fade-in max-w-6xl mx-auto text-white">
+                                        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+                                            <div><h2 className="text-5xl font-black uppercase italic tracking-tighter">Conferência Automática</h2><p className="text-slate-500 text-sm mt-2 font-medium italic opacity-80 uppercase tracking-widest italic">Análise de acertos contra a Caixa.</p></div>
+                                            <button onClick={syncOfficial} disabled={isBusy} className="px-12 py-8 bg-emerald-500/10 border border-emerald-500/20 rounded-[3rem] text-emerald-400 font-black uppercase text-xs tracking-widest flex items-center gap-5 hover:bg-emerald-500/20 shadow-2xl">{isBusy ? <Icon name="refresh-cw" className="animate-spin" /> : <Icon name="globe" />} SINCRONIZAR</button>
+                                        </header>
+                                        {apiData[activeLotto] && (
+                                            <div className="bg-[#0c1220] border border-white/5 rounded-[4rem] p-12 lg:p-24 flex flex-col items-center gap-16 shadow-2xl relative overflow-hidden animate-pop">
+                                                <div className="text-center space-y-4 relative z-10 font-black uppercase"><h3 className="text-[16px] text-emerald-500 tracking-[0.8em]">Concurso Oficial #{apiData[activeLotto].concurso}</h3><p className="text-slate-500 text-sm opacity-60 italic">{apiData[activeLotto].data}</p></div>
+                                                <div className="flex flex-wrap justify-center gap-6 lg:gap-10 relative z-10">{apiData[activeLotto].dezenas.map((n, i) => <div key={i} className="w-16 h-16 lg:w-32 lg:h-32 rounded-[2.5rem] bg-emerald-500 text-black flex items-center justify-center font-black text-2xl lg:text-7xl shadow-lg border-4 border-emerald-400/50">{n}</div>)}</div>
+                                                <div className="w-full space-y-10 pt-10 border-t border-white/5">
+                                                    <h4 className="text-[10px] text-slate-500 uppercase tracking-[0.4em] text-center font-black">Conferência de Bilhetes Salvos</h4>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
+                                                        {vault.filter(v => v.tipo === activeLotto).map(j => {
+                                                            const drawnNums = apiData[activeLotto].dezenas.map(Number);
+                                                            const hits = j.numeros.filter(n => drawnNums.includes(n)).length;
+                                                            const isWinner = hits >= (j.tipo === 'facil' ? 11 : 4);
+                                                            return (
+                                                                <div key={j.id} className={`p-6 rounded-[2rem] border transition-all ${isWinner ? 'bg-emerald-500/10 border-emerald-500/40 animate-pulse' : 'bg-white/5 border-white/5 opacity-60'}`}>
+                                                                    <div className="flex justify-between items-center mb-4"><span className="text-[10px] text-slate-500 uppercase">Bilhete</span><span className={`px-2 py-0.5 rounded text-[10px] font-black ${isWinner ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/50' : 'bg-slate-800 text-slate-400'}`}>{hits} ACERTOS</span></div>
+                                                                    <div className="flex flex-wrap gap-2">{j.numeros.map((n, idx) => {
+                                                                        const isHit = drawnNums.includes(n);
+                                                                        return <span key={idx} className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-mono font-black border ${isHit ? 'bg-emerald-500 border-emerald-400 text-black shadow-lg shadow-emerald-500/50' : 'bg-black/20 border-white/5 text-slate-700'}`}>{n.toString().padStart(2, '0')}</span>
+                                                                    })}</div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </main>
                 </div>
