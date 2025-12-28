@@ -49,7 +49,6 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         
-        /* Animações Dinâmicas */
         .page-transition { animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1) forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -63,6 +62,15 @@
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
+
+        .lotomania-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+        }
+
+        /* Bloqueio de seleção de texto para mobile para parecer App Nativo */
+        .no-select { user-select: none; -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
 <body>
@@ -100,6 +108,7 @@
             mega: { n: 'Mega-Sena', api: 'megasena', max: 60, k: 6, color: '#10b981', hot: [10, 53, 5, 4, 33, 23, 27, 30, 37, 42] },
             facil: { n: 'Lotofácil', api: 'lotofacil', max: 25, k: 15, color: '#a855f7', hot: [20, 11, 10, 13, 24, 25, 14, 3, 4, 12] },
             quina: { n: 'Quina', api: 'quina', max: 80, k: 5, color: '#3b82f6', hot: [4, 49, 31, 39, 52, 16, 18, 53, 10, 38] },
+            mania: { n: 'Lotomania', api: 'lotomania', max: 100, k: 50, color: '#f97316', hot: [47, 43, 54, 48, 92, 49, 17, 31, 41, 64, 45, 11, 58, 91, 76, 26, 85, 42, 51, 82, 0, 19, 38, 44, 27] },
             timemania: { n: 'Timemania', api: 'timemania', max: 80, k: 10, color: '#eab308', hot: [20, 71, 80, 4, 6, 70, 72, 60, 21, 25] },
             sorte: { n: 'Dia de Sorte', api: 'diadesorte', max: 31, k: 7, color: '#f97316', hot: [10, 7, 23, 31, 9, 21, 15, 1, 14, 8] }
         };
@@ -127,17 +136,17 @@
             const [isBusy, setIsBusy] = useState(false);
             const [msg, setMsg] = useState({ type: '', text: '' });
             const [timer, setTimer] = useState(300); 
-            const [showHeatHelp, setShowHeatHelp] = useState(false);
+            const [showHeatMapHelp, setShowHeatMapHelp] = useState(false);
 
-            // Formulário com confirmações solicitadas
+            // Formulário com confirmações
             const [authForm, setAuthForm] = useState({ 
                 id: '', pass: '', nome: '', apelido: '', tel: '', cTel: '', 
                 email: '', cEmail: '', passReg: '', cPassReg: '', sexo: 'masculino', nascimento: '' 
             });
-            const [editForm, setEditForm] = useState({ nome: '', apelido: '', tel: '', sexo: '', oldPass: '', newPass: '', cNewPass: '' });
+            const [editForm, setEditForm] = useState({ nome: '', apelido: '', telefone: '', sexo: 'masculino', oldPass: '', newPass: '', cNewPass: '' });
             const [apiData, setApiData] = useState({});
 
-            // Logout Automático (5 min)
+            // Inatividade de 5 minutos
             useEffect(() => {
                 if (!user) return;
                 const countdown = setInterval(() => {
@@ -149,11 +158,9 @@
                         return prev - 1;
                     });
                 }, 1000);
-
                 const resetTimer = () => setTimer(300);
                 const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
                 events.forEach(e => window.addEventListener(e, resetTimer));
-
                 return () => {
                     clearInterval(countdown);
                     events.forEach(e => window.removeEventListener(e, resetTimer));
@@ -171,14 +178,11 @@
                                     if (snap.exists()) {
                                         const d = snap.data();
                                         setProfile(d);
-                                        setEditForm({ ...d, oldPass: '', newPass: '', cNewPass: '' });
+                                        setEditForm({ nome: d.nome || '', apelido: d.apelido || '', telefone: d.telefone || '', sexo: d.sexo || 'masculino', oldPass: '', newPass: '', cNewPass: '' });
                                     }
-                                } catch(e) {}
+                                } catch(e) { console.error("Net error profile", e); }
                                 setUser(u);
-                            } else {
-                                setUser(null);
-                                setProfile(null);
-                            }
+                            } else { setUser(null); setProfile(null); }
                             setInit(true);
                         });
                     }
@@ -188,7 +192,7 @@
             useEffect(() => {
                 if (!user) return;
                 const q = window.RadCore.dbOps.collection(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault');
-                return window.RadCore.dbOps.onSnapshot(q, (s) => setVault(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+                return window.RadCore.dbOps.onSnapshot(q, (s) => setVault(s.docs.map(d => ({ id: d.id, ...d.data() }))), (e) => console.error("Net error vault", e));
             }, [user]);
 
             const handleAuth = async (e) => {
@@ -197,16 +201,12 @@
                 setIsBusy(true);
                 try {
                     if (view === 'register') {
-                        if (authForm.email !== authForm.cEmail) throw new Error("Os e-mails não coincidem.");
-                        if (authForm.tel !== authForm.cTel) throw new Error("Os telefones não coincidem.");
-                        if (authForm.passReg !== authForm.cPassReg) throw new Error("As senhas não coincidem.");
+                        if (authForm.email !== authForm.cEmail) throw new Error("E-mails não coincidem.");
+                        if (authForm.tel !== authForm.cTel) throw new Error("Telefones não coincidem.");
+                        if (authForm.passReg !== authForm.cPassReg) throw new Error("Senhas não coincidem.");
                         
                         const uc = await window.RadCore.api.createUserWithEmailAndPassword(window.RadCore.auth, authForm.email, authForm.passReg);
-                        const pData = { 
-                            nome: authForm.nome, apelido: authForm.apelido, telefone: authForm.tel, 
-                            email: authForm.email, sexo: authForm.sexo, nascimento: authForm.nascimento,
-                            createdAt: window.RadCore.dbOps.serverTimestamp() 
-                        };
+                        const pData = { nome: authForm.nome, apelido: authForm.apelido, telefone: authForm.tel, email: authForm.email, sexo: authForm.sexo, nascimento: authForm.nascimento, createdAt: window.RadCore.dbOps.serverTimestamp() };
                         await window.RadCore.dbOps.setDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', uc.user.uid, 'profile', 'data'), pData);
                         await window.RadCore.dbOps.setDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', authForm.apelido.toLowerCase()), { email: authForm.email });
                     } else if (view === 'login') {
@@ -214,12 +214,12 @@
                         if (!email.includes('@')) {
                             const snap = await window.RadCore.dbOps.getDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', email.toLowerCase()));
                             if (snap.exists()) email = snap.data().email;
-                            else throw new Error("Apelido não encontrado.");
+                            else throw new Error("Identificador não localizado.");
                         }
                         await window.RadCore.api.signInWithEmailAndPassword(window.RadCore.auth, email, authForm.pass);
                     } else if (view === 'recovery') {
                         await window.RadCore.api.sendPasswordResetEmail(window.RadCore.auth, authForm.email);
-                        setMsg({ type: 'success', text: "E-mail de recuperação enviado!" });
+                        setMsg({ type: 'success', text: "Link de recuperação enviado!" });
                         setTimeout(() => setView('login'), 3000);
                     }
                 } catch (err) { setMsg({ type: 'error', text: err.message || "Erro no acesso." }); }
@@ -232,18 +232,20 @@
                 setMsg({ type: '', text: '' });
                 try {
                     const ref = window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'profile', 'data');
-                    await window.RadCore.dbOps.updateDoc(ref, {
-                        nome: editForm.nome, apelido: editForm.apelido,
-                        telefone: editForm.tel, sexo: editForm.sexo
-                    });
+                    const updateData = { nome: editForm.nome, apelido: editForm.apelido, telefone: editForm.telefone, sexo: editForm.sexo };
+                    await window.RadCore.dbOps.updateDoc(ref, updateData);
                     if (editForm.newPass) {
+                        if (editForm.newPass !== editForm.cNewPass) throw new Error("As novas senhas não coincidem.");
                         const cred = window.RadCore.api.EmailAuthProvider.credential(user.email, editForm.oldPass);
                         await window.RadCore.api.reauthenticateWithCredential(user, cred);
                         await window.RadCore.api.updatePassword(user, editForm.newPass);
                     }
-                    setProfile({ ...profile, ...editForm });
+                    if (editForm.apelido !== profile.apelido) {
+                         await window.RadCore.dbOps.setDoc(window.RadCore.dbOps.doc(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'public', 'data', 'nicknames', editForm.apelido.toLowerCase()), { email: profile.email });
+                    }
+                    setProfile({ ...profile, ...updateData });
                     setMsg({ type: 'success', text: "Perfil atualizado!" });
-                } catch (err) { setMsg({ type: 'error', text: "Erro ao salvar. Verifique a senha atual." }); }
+                } catch (err) { setMsg({ type: 'error', text: "Falha ao salvar. Valide os dados." }); }
                 setIsBusy(false);
             };
 
@@ -253,7 +255,9 @@
                 setTimeout(() => {
                     let pool = [];
                     cfg.hot.forEach(n => { for(let i=0; i<15; i++) pool.push(n); });
-                    for(let i = 1; i <= cfg.max; i++) pool.push(i);
+                    const luckyBias = [6, 3, 25, 9, 24, 30, 58];
+                    luckyBias.forEach(n => { if(n < cfg.max) { for(let i=0; i<10; i++) pool.push(n); } });
+                    for(let i = 0; i < cfg.max; i++) pool.push(i);
                     let res = [];
                     while(res.length < cfg.k) {
                         let n = pool[Math.floor(Math.random() * pool.length)];
@@ -261,16 +265,18 @@
                     }
                     setGame(res.sort((a,b)=>a-b));
                     setIsBusy(false);
-                }, 600);
+                }, 700);
             };
 
             const saveGame = async () => {
                 if (!user || !game) return;
                 const p = game.filter(n => n % 2 === 0).length;
-                await window.RadCore.dbOps.addDoc(window.RadCore.dbOps.collection(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault'), {
-                    tipo: activeLotto, numeros: game, stats: { pares: p, impares: game.length-p, soma: game.reduce((a,b)=>a+b,0) }, criadoEm: window.RadCore.dbOps.serverTimestamp()
-                });
-                setGame(null);
+                try {
+                    await window.RadCore.dbOps.addDoc(window.RadCore.dbOps.collection(window.RadCore.db, 'artifacts', 'radlot-pro-main', 'users', user.uid, 'vault'), {
+                        tipo: activeLotto, numeros: game, stats: { pares: p, impares: game.length-p, soma: game.reduce((a,b)=>a+b,0) }, criadoEm: window.RadCore.dbOps.serverTimestamp()
+                    });
+                    setGame(null);
+                } catch(e) { setMsg({ type: 'error', text: "Erro ao salvar no banco." }); }
             };
 
             const syncOfficial = async () => {
@@ -286,28 +292,29 @@
             const imprimirPDF = (j) => {
                 if (!window.jspdf) return;
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ format: [80, 160], unit: 'mm' });
+                const doc = new jsPDF({ format: [80, 180], unit: 'mm' });
                 const config = MODS[j.tipo || activeLotto];
                 const numsArray = Array.isArray(j) ? j : j.numeros;
-                
                 doc.setFillColor(15, 23, 42);
                 doc.rect(0, 0, 80, 25, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(14);
                 doc.text("RADLOT PRO", 40, 12, { align: 'center' });
                 doc.setFontSize(8);
-                doc.text("PROCESSAMENTO MAKER 2025", 40, 18, { align: 'center' });
-                
+                doc.text("BILHETE TÉCNICO 2025", 40, 18, { align: 'center' });
                 doc.setTextColor(0, 0, 0);
                 doc.setFontSize(10);
                 doc.text(`TIPO: ${config.n.toUpperCase()}`, 10, 35);
                 doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 10, 42);
                 doc.line(10, 48, 70, 48);
-                
-                doc.setFontSize(12);
-                const numsStr = numsArray.map(n => n.toString().padStart(2, '0')).join(' ');
-                doc.text(numsStr, 40, 65, { align: 'center', maxWidth: 60 });
-                
+                doc.setFontSize(9);
+                let y = 60;
+                const chunks = [];
+                for(let i=0; i<numsArray.length; i+=5) chunks.push(numsArray.slice(i, i+5));
+                chunks.forEach(chunk => {
+                    doc.text(chunk.map(n => n.toString().padStart(2, '0')).join('  '), 40, y, { align: 'center' });
+                    y += 6;
+                });
                 doc.save(`Ticket_RadLot_${Date.now()}.pdf`);
             };
 
@@ -320,32 +327,29 @@
             if (!init) return <div className="min-h-screen bg-[#020617] flex items-center justify-center"><Icon name="refresh-cw" className="w-12 h-12 animate-spin text-emerald-500" /></div>;
 
             if (!user) return (
-                <div className="h-full overflow-y-auto custom-scrollbar flex items-center justify-center p-4 bg-[#020617] selection:bg-emerald-500/30">
+                <div className="h-full overflow-y-auto custom-scrollbar flex items-center justify-center p-4 bg-[#020617]">
                     <div className="w-full max-w-xl bg-[#090e1a] border border-white/5 p-8 md:p-12 rounded-[3rem] shadow-2xl my-10 relative overflow-hidden">
                         <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 blur-[80px]"></div>
                         <div className="text-center mb-10 relative z-10">
                             <div className="p-5 bg-emerald-500 rounded-[2rem] w-fit mx-auto mb-6 text-black shadow-lg pulse-emerald"><Icon name="clover" className="w-12 h-12" /></div>
                             <h1 className="text-4xl font-black uppercase italic tracking-tighter text-white leading-none">RadLot <span className="text-emerald-500 not-italic">PRO</span></h1>
                         </div>
-
-                        <form onSubmit={handleAuth} className="space-y-6 relative z-10">
+                        <form onSubmit={handleAuth} className="space-y-5 relative z-10 no-select">
                             {view === 'register' ? (
-                                <div className="space-y-5 fade-in">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input type="text" placeholder="Nome Completo" onChange={e=>setAuthForm({...authForm, nome:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
+                                <div className="space-y-4 fade-in">
+                                    <input type="text" placeholder="Nome Completo" onChange={e=>setAuthForm({...authForm, nome:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
+                                    <div className="grid grid-cols-2 gap-4">
                                         <input type="text" placeholder="Apelido" onChange={e=>setAuthForm({...authForm, apelido:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
+                                        <input type="date" onChange={e=>setAuthForm({...authForm, nascimento:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none text-slate-400" required />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input type="date" onChange={e=>setAuthForm({...authForm, nascimento:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none text-slate-400" required />
-                                        <select onChange={e=>setAuthForm({...authForm, sexo:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none">
+                                        <select onChange={e=>setAuthForm({...authForm, sexo:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none bg-[#090e1a] text-white">
                                             <option value="masculino">Masculino</option>
                                             <option value="feminino">Feminino</option>
                                         </select>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <input type="tel" placeholder="Telefone" onChange={e=>setAuthForm({...authForm, tel:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
-                                        <input type="tel" placeholder="Confirmar Telefone" onChange={e=>setAuthForm({...authForm, cTel:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
                                     </div>
+                                    <input type="tel" placeholder="Confirmar Telefone" onChange={e=>setAuthForm({...authForm, cTel:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <input type="email" placeholder="E-mail" onChange={e=>setAuthForm({...authForm, email:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
                                         <input type="email" placeholder="Confirmar E-mail" onChange={e=>setAuthForm({...authForm, cEmail:e.target.value})} className="w-full py-4 px-5 rounded-2xl outline-none" required />
@@ -378,7 +382,6 @@
                                 <button type="button" onClick={()=>setView(view==='login'?'register':'login')} className="text-slate-500 text-[10px] font-black uppercase tracking-widest hover:text-emerald-400">
                                     {view==='login'?'Criar conta agora':'Já tenho conta'}
                                 </button>
-                                {view === 'recovery' && <button type="button" onClick={()=>setView('login')} className="block mx-auto mt-4 text-slate-500 text-[10px] font-black uppercase">Voltar</button>}
                             </div>
                         </form>
                     </div>
@@ -386,7 +389,7 @@
             );
 
             return (
-                <div className="h-full flex flex-col lg:flex-row bg-[#020617] overflow-hidden">
+                <div className="h-full flex flex-col lg:flex-row bg-[#020617] overflow-hidden no-select">
                     {/* Desktop Sidebar */}
                     <aside className="hidden lg:flex w-80 bg-[#090e1a] border-r border-white/5 p-10 flex flex-col gap-12 flex-shrink-0 h-full relative z-20">
                         <div className="flex items-center gap-4">
@@ -414,19 +417,16 @@
                     <main className="flex-grow relative h-full overflow-hidden flex flex-col">
                         {/* Status Header Fixo */}
                         <div className="sticky top-0 left-0 w-full h-20 lg:h-28 glass-nav flex items-center justify-between lg:justify-end px-6 lg:px-12 z-50">
-                            <div className="lg:hidden flex items-center gap-3">
-                                <Icon name="clover" className="text-emerald-500" />
-                                <span className="font-black text-sm uppercase italic">RadLot PRO</span>
-                            </div>
+                            <div className="lg:hidden flex items-center gap-3"><Icon name="clover" className="text-emerald-500" /><span className="font-black text-sm uppercase italic">RadLot PRO</span></div>
                             <div className="flex items-center gap-4 lg:gap-6">
                                 <div className="text-right">
-                                    <p className="text-[11px] lg:text-sm font-black text-white uppercase tracking-tighter leading-none mb-1">{profile?.nome || 'Operador RadLot'}</p>
+                                    <p className="text-[11px] lg:text-sm font-black text-white uppercase tracking-tighter leading-none mb-1">@{profile?.apelido || 'Operador'}</p>
                                     <div className="flex items-center justify-end gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                        <p className="text-[9px] lg:text-[10px] font-bold text-emerald-500 uppercase tracking-widest italic opacity-80 leading-none">Ativo: {formatTimer(timer)}</p>
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+                                        <p className="text-[9px] lg:text-[10px] font-bold text-emerald-500 uppercase tracking-widest italic opacity-80 leading-none">Online: {formatTimer(timer)}</p>
                                     </div>
                                 </div>
-                                <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner">
+                                <div className="w-11 h-11 lg:w-16 lg:h-16 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-emerald-500 shadow-inner">
                                     <Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-7 h-7 lg:w-9 lg:h-9" />
                                 </div>
                             </div>
@@ -438,10 +438,7 @@
                                 {tab === 'gerador' && (
                                     <div className="space-y-12 page-transition">
                                         <header className="flex flex-col lg:flex-row justify-between gap-8">
-                                            <div className="text-center lg:text-left">
-                                                <h2 className="text-4xl lg:text-6xl font-black uppercase italic tracking-tighter text-white">Processador de Dezenas</h2>
-                                                <p className="text-slate-500 text-xs lg:text-sm mt-2 font-medium italic">Análise estocástica otimizada 2009-2025.</p>
-                                            </div>
+                                            <div className="text-center lg:text-left"><h2 className="text-4xl lg:text-6xl font-black uppercase italic tracking-tighter text-white">Processador de Dezenas</h2><p className="text-slate-500 text-xs lg:text-sm mt-2 font-medium italic opacity-80">Atualização Gigante: Lotomania Incluída (2009-2025).</p></div>
                                             <div className="flex flex-wrap gap-2 p-1.5 bg-[#0c1220] rounded-[2rem] border border-white/5 shadow-2xl justify-center h-fit">
                                                 {Object.keys(MODS).map(k => (
                                                     <button key={k} onClick={()=>{setActiveLotto(k);setGame(null);}} className={`px-5 lg:px-7 py-3 lg:py-4 rounded-[1.5rem] text-[9px] lg:text-[11px] font-black uppercase transition-all ${activeLotto === k ? 'bg-emerald-500 text-black shadow-lg' : 'text-slate-500 hover:text-white'}`}>{MODS[k].n}</button>
@@ -450,11 +447,11 @@
                                         </header>
 
                                         <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
-                                            <div className="xl:col-span-2 bg-[#0c1220] border border-white/5 rounded-[3rem] lg:rounded-[4.5rem] p-8 lg:p-24 flex flex-col items-center justify-center text-center shadow-2xl min-h-[450px] lg:min-h-[600px] relative overflow-hidden group transition-all">
+                                            <div className="xl:col-span-2 bg-[#0c1220] border border-white/5 rounded-[3rem] lg:rounded-[4.5rem] p-8 lg:p-20 flex flex-col items-center justify-center text-center shadow-2xl min-h-[450px] lg:min-h-[600px] relative overflow-hidden group transition-all">
                                                 {game ? (
                                                     <div className="space-y-12 w-full animate-in zoom-in-95">
-                                                        <div className="flex flex-wrap justify-center gap-4 lg:gap-6">
-                                                            {game.map((n, i) => <div key={i} className="w-14 h-14 lg:w-28 lg:h-28 rounded-2xl lg:rounded-[2.5rem] bg-[#1e293b] border-2 border-emerald-500/30 flex items-center justify-center text-white font-black text-2xl lg:text-6xl shadow-2xl hover:scale-110 transition-transform">{n.toString().padStart(2,'0')}</div>)}
+                                                        <div className="flex flex-wrap justify-center gap-3 lg:gap-5">
+                                                            {game.map((n, i) => <div key={i} className="w-10 h-10 lg:w-16 lg:h-16 rounded-xl bg-[#1e293b] border-2 border-emerald-500/30 flex items-center justify-center text-white font-black text-sm lg:text-2xl shadow-2xl hover:scale-110 transition-transform">{n.toString().padStart(2,'0')}</div>)}
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-6 lg:gap-10 max-w-lg mx-auto pt-10 border-t border-white/5">
                                                             <div className="text-center p-5 bg-white/5 rounded-[2rem]"><span className="text-[10px] text-slate-500 uppercase block mb-1 font-black">Paridade</span><p className="text-2xl text-emerald-400 italic font-black">{game.filter(n=>n%2===0).length}P / {game.length-game.filter(n=>n%2===0).length}Í</p></div>
@@ -469,16 +466,20 @@
                                                 ) : (
                                                     <div className="space-y-12">
                                                         <div className="w-32 h-32 lg:w-56 lg:h-56 bg-emerald-500/5 rounded-[3rem] lg:rounded-[5rem] flex items-center justify-center mx-auto border-2 border-dashed border-emerald-500/20 relative group-hover:scale-110 transition-transform duration-500"><Icon name="zap" className="w-16 h-16 lg:w-24 lg:h-24 text-emerald-500 animate-pulse" /></div>
-                                                        <h3 className="text-3xl lg:text-5xl font-black uppercase italic tracking-tighter text-white">Otimização de Amostragem</h3>
-                                                        <button onClick={generate} disabled={isBusy} className="px-14 lg:px-24 py-6 lg:py-10 bg-emerald-600 hover:bg-emerald-500 rounded-[2rem] lg:rounded-[3rem] font-black text-black uppercase tracking-[0.4em] text-sm lg:text-lg shadow-2xl active:scale-95 border-b-8 border-emerald-900 transition-all">RODAR SISTEMA</button>
+                                                        <h3 className="text-3xl lg:text-5xl font-black uppercase italic tracking-tighter text-white">Processamento Hacker</h3>
+                                                        <button onClick={generate} disabled={isBusy} className="px-14 lg:px-24 py-6 lg:py-10 bg-emerald-600 hover:bg-emerald-500 rounded-[2rem] lg:rounded-[3rem] font-black text-black uppercase tracking-[0.4em] text-sm lg:text-lg shadow-2xl active:scale-95 border-b-8 border-emerald-900 transition-all">PROCESSAR AGORA</button>
                                                     </div>
                                                 )}
                                             </div>
 
                                             <div className="bg-[#0c1220] rounded-[3rem] p-10 border border-white/5 shadow-inner">
-                                                <div className="flex justify-between items-center mb-8"><h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-3"><Icon name="layout-grid" className="text-emerald-500" /> Grade de Dispersão</h4><button onClick={()=>setShowHeatHelp(!showHeatHelp)} className="text-slate-500 hover:text-emerald-500"><Icon name="help-circle" /></button></div>
-                                                {showHeatHelp && <div className="mb-6 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] text-[10px] text-emerald-400 leading-relaxed italic fade-in">A Grade analisa a distribuição física das dezenas no volante. Matematicamente, jogos equilibrados possuem uma probabilidade de ocorrência superior a agrupamentos extremos.</div>}
-                                                <div className="grid grid-cols-5 gap-2 aspect-square p-4 bg-black/40 rounded-[2.5rem] border border-white/5 shadow-inner">{Array.from({length: 25}).map((_,i)=><div key={i} className={`rounded-xl transition-all duration-700 ${game?.includes(i+1)?'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]':'bg-white/5 opacity-10'}`}></div>)}</div>
+                                                <div className="flex justify-between items-center mb-8"><h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-3"><Icon name="layout-grid" className="text-emerald-500" /> Grade de Dispersão</h4><button onClick={()=>setShowHeatMapHelp(!showHeatMapHelp)} className="text-slate-500 hover:text-emerald-500"><Icon name="help-circle" /></button></div>
+                                                {showHeatMapHelp && <div className="mb-6 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] text-[10px] text-emerald-400 leading-relaxed italic fade-in">A Grade analisa a distribuição física das dezenas no volante. Matematicamente, jogos equilibrados possuem uma probabilidade de ocorrência superior a agrupamentos extremos.</div>}
+                                                <div className={activeLotto === 'mania' ? 'lotomania-grid p-2 bg-black/40 rounded-xl' : 'grid grid-cols-5 gap-2 aspect-square p-4 bg-black/40 rounded-[2.5rem] border border-white/5 shadow-inner'}>
+                                                    {Array.from({length: activeLotto === 'mania' ? 100 : 25}).map((_,i)=>(
+                                                        <div key={i} className={`rounded-sm lg:rounded-md transition-all duration-700 ${activeLotto === 'mania' ? 'h-3 lg:h-5' : 'h-8 lg:h-12'} ${game?.includes(i+(activeLotto === 'mania' ? 0 : 1))?'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]':'bg-white/5 opacity-10'}`}></div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -490,7 +491,9 @@
                                         <div className="bg-[#0c1220] border border-white/5 p-8 lg:p-16 rounded-[3rem] lg:rounded-[4.5rem] shadow-2xl">
                                             <form onSubmit={handleProfileUpdate} className="space-y-10">
                                                 <div className="flex flex-col md:flex-row items-center gap-12 pb-10 border-b border-white/5">
-                                                    <div className="w-36 h-36 lg:w-48 lg:h-48 rounded-[3rem] bg-slate-800 border-2 border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-inner"><Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-20 h-20 lg:w-28 lg:h-28" /></div>
+                                                    <div className="w-36 h-36 lg:w-48 lg:h-48 rounded-[3rem] bg-slate-800 border-2 border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-inner">
+                                                        <Icon name={profile?.sexo === 'feminino' ? 'circle-user' : 'user-square-2'} className="w-20 h-20 lg:w-28 lg:h-28" />
+                                                    </div>
                                                     <div className="space-y-6 text-center md:text-left text-white uppercase font-black tracking-widest">
                                                         <label className="text-[11px] text-slate-500">Avatar e Identidade</label>
                                                         <div className="flex gap-4 justify-center md:justify-start">
@@ -513,6 +516,7 @@
                                                     </div>
                                                 </div>
                                                 <button type="submit" disabled={isBusy} className="w-full py-8 bg-emerald-600 hover:bg-emerald-500 text-black font-black rounded-[2.5rem] uppercase text-sm tracking-[0.2em] shadow-2xl active:scale-95 border-b-8 border-emerald-900 transition-all">SALVAR ALTERAÇÕES</button>
+                                                {msg.text && <div className={`p-6 rounded-[2rem] border text-[10px] font-black uppercase text-center flex items-center justify-center gap-3 shadow-lg ${msg.type==='success'?'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-lg':'bg-red-500/10 text-red-400 border-red-500/20'}`}>{msg.text}</div>}
                                             </form>
                                         </div>
                                     </div>
@@ -532,7 +536,7 @@
                                                                 <button onClick={()=>window.RadCore.dbOps.deleteDoc(window.RadCore.dbOps.doc(window.RadCore.db,'artifacts','radlot-pro-main','users',user.uid,'vault',j.id))} className="p-4 bg-white/5 text-slate-400 rounded-3xl hover:text-red-500 transition-all shadow-inner"><Icon name="trash-2" /></button>
                                                             </div>
                                                         </div>
-                                                        <div className="flex flex-wrap gap-4 relative z-10">{j.numeros.map((n, i) => <span key={i} className="w-12 h-12 lg:w-14 lg:h-14 flex items-center justify-center bg-black/60 rounded-2xl lg:rounded-[1.5rem] text-xl lg:text-2xl font-mono font-black text-emerald-400 border border-emerald-500/10 shadow-2xl">{n.toString().padStart(2, '0')}</span>)}</div>
+                                                        <div className="flex flex-wrap gap-2 relative z-10">{j.numeros.map((n, i) => <span key={i} className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center bg-black/60 rounded-xl lg:rounded-2xl text-xs font-mono font-black text-emerald-400 border border-emerald-500/10 shadow-2xl">{n.toString().padStart(2, '0')}</span>)}</div>
                                                         <div className="flex justify-between items-center text-[10px] text-slate-600 font-black border-t border-white/5 pt-8 uppercase tracking-widest relative z-10"><span>Soma: {j.stats?.soma}</span><span>{new Date(j.criadoEm?.seconds * 1000).toLocaleDateString('pt-BR')}</span></div>
                                                     </div>
                                                 ))
@@ -544,17 +548,17 @@
                                 {tab === 'scanner' && (
                                     <div className="space-y-12 page-transition max-w-6xl mx-auto pb-20 text-white font-black">
                                         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-                                            <div><h2 className="text-5xl font-black uppercase italic tracking-tighter">Conferência Automática</h2><p className="text-slate-500 text-sm mt-2 font-medium italic opacity-80 uppercase tracking-widest">Sincronização Oficial Caixa.</p></div>
+                                            <div><h2 className="text-5xl font-black uppercase italic tracking-tighter">Conferência Automática</h2><p className="text-slate-500 text-sm mt-2 font-medium italic opacity-80 uppercase tracking-widest">Sincronização Oficial Caixa (2009-2025).</p></div>
                                             <button onClick={syncOfficial} disabled={isBusy} className="px-14 py-8 bg-emerald-500/10 border border-emerald-500/20 rounded-[3rem] text-emerald-400 font-black uppercase text-xs tracking-widest flex items-center gap-5 hover:bg-emerald-500/20 shadow-2xl">{isBusy ? <Icon name="refresh-cw" className="animate-spin" /> : <Icon name="globe" />} SINCRONIZAR</button>
                                         </header>
                                         {apiData[activeLotto] && (
                                             <div className="bg-[#0c1220] border border-white/5 rounded-[4rem] p-12 lg:p-24 flex flex-col items-center gap-16 shadow-2xl relative overflow-hidden animate-pop">
                                                 <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500 opacity-30"></div>
-                                                <div className="text-center space-y-4 relative z-10"><h3 className="text-[16px] text-emerald-500 tracking-[0.8em]">Concurso Oficial #{apiData[activeLotto].concurso}</h3><p className="text-slate-500 text-sm opacity-60 italic">{apiData[activeLotto].data}</p></div>
-                                                <div className="flex flex-wrap justify-center gap-5 lg:gap-10 relative z-10">{apiData[activeLotto].dezenas.map((n, i) => <div key={i} className="w-14 h-14 lg:w-32 lg:h-32 rounded-[2rem] lg:rounded-[3rem] bg-emerald-500 text-black flex items-center justify-center font-black text-xl lg:text-7xl shadow-lg border-4 border-emerald-400/50">{n}</div>)}</div>
+                                                <div className="text-center space-y-4 relative z-10 font-black uppercase"><h3 className="text-[16px] text-emerald-500 tracking-[0.8em]">Concurso Oficial #{apiData[activeLotto].concurso}</h3><p className="text-slate-500 text-sm opacity-60 italic">{apiData[activeLotto].data}</p></div>
+                                                <div className="flex flex-wrap justify-center gap-3 lg:gap-5 relative z-10">{apiData[activeLotto].dezenas.map((n, i) => <div key={i} className="w-10 h-10 lg:w-24 lg:h-24 rounded-2xl bg-emerald-500 text-black flex items-center justify-center font-black text-sm lg:text-3xl shadow-lg border-2 lg:border-4 border-emerald-400/50">{n}</div>)}</div>
                                                 
                                                 <div className="w-full space-y-12 pt-10 border-t border-white/5">
-                                                    <h4 className="text-[11px] text-slate-500 uppercase tracking-[0.5em] text-center">Cruzamento de Resultados</h4>
+                                                    <h4 className="text-[11px] text-slate-500 uppercase tracking-[0.5em] text-center">Cruzamento de Resultados no Cofre</h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
                                                         {vault.filter(v => v.tipo === activeLotto).map(j => {
                                                             const drawnNums = apiData[activeLotto].dezenas.map(Number);
