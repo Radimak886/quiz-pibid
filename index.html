@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -25,7 +25,7 @@
             100% { transform: translateY(0); opacity: 1; }
         }
 
-        .btn-3d { transition: all 0.1s; box-shadow: 0 4px 0 0 #cbd5e1; }
+        .btn-3d { transition: all 0.1s; box-shadow: 0 4px 0 0 #cbd5e1; cursor: pointer; }
         .btn-3d:active { transform: translateY(4px); box-shadow: 0 0 0 0 #cbd5e1; }
         .btn-3d-blue { box-shadow: 0 4px 0 0 #1d4ed8; }
         .btn-3d-blue:active { transform: translateY(4px); box-shadow: 0 0 0 0 #1d4ed8; }
@@ -43,9 +43,12 @@
     <div class="max-w-md w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden relative flex flex-col h-[90vh] max-h-[850px] border border-slate-200">
         
         <!-- Header Global -->
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 p-5 text-white flex items-center justify-between shadow-md z-10 shrink-0">
-            <div class="flex items-center gap-3">
-                <button id="btnBack" onclick="navigate('home')" class="hidden hover:bg-white/20 p-2 rounded-full transition-colors">
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 p-5 text-white flex items-center justify-between shadow-md z-10 shrink-0 relative">
+            <!-- Camada decorativa com pointer-events-none para não roubar cliques -->
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div class="flex items-center gap-3 relative z-10">
+                <button id="btnBack" onclick="navigate('home')" class="hidden hover:bg-white/20 p-2 rounded-full transition-colors cursor-pointer">
                     <i class="ph-bold ph-arrow-left text-xl"></i>
                 </button>
                 <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -59,7 +62,7 @@
         </div>
 
         <!-- Área de Conteúdo Rolável -->
-        <div class="flex-1 overflow-y-auto bg-slate-50 relative">
+        <div class="flex-1 overflow-y-auto bg-slate-50 relative z-0">
 
             <!-- TELA 1: MENU PRINCIPAL (HOME) -->
             <div id="view-home" class="view-section p-6 space-y-6 fade-in">
@@ -70,7 +73,7 @@
 
                 <div class="grid grid-cols-1 gap-4">
                     <!-- Botão Módulo Compras -->
-                    <button onclick="navigate('compras')" class="bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-red-400 hover:bg-red-50 transition-all text-left group">
+                    <button onclick="navigate('compras')" class="w-full bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-red-400 hover:bg-red-50 transition-all text-left group cursor-pointer">
                         <div class="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
                             <i class="ph-fill ph-shopping-cart"></i>
                         </div>
@@ -81,7 +84,7 @@
                     </button>
 
                     <!-- Botão Módulo Investimentos -->
-                    <button onclick="navigate('investimentos')" class="bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-emerald-400 hover:bg-emerald-50 transition-all text-left group">
+                    <button onclick="navigate('investimentos')" class="w-full bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-emerald-400 hover:bg-emerald-50 transition-all text-left group cursor-pointer">
                         <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
                             <i class="ph-fill ph-trend-up"></i>
                         </div>
@@ -92,7 +95,7 @@
                     </button>
 
                     <!-- Botão Módulo Jogo -->
-                    <button onclick="navigate('jogo')" class="bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-purple-400 hover:bg-purple-50 transition-all text-left group">
+                    <button onclick="navigate('jogo')" class="w-full bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-purple-400 hover:bg-purple-50 transition-all text-left group cursor-pointer">
                         <div class="w-14 h-14 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
                             <i class="ph-fill ph-game-controller"></i>
                         </div>
@@ -126,7 +129,7 @@
                                 <input type="number" id="compraTempo" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-red-500" placeholder="Ex: 12">
                             </div>
                         </div>
-                        <button onclick="calcularCompra()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl btn-3d mt-2">
+                        <button onclick="calcularCompra()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl btn-3d mt-2 cursor-pointer">
                             Calcular Parcelas e Juros
                         </button>
                     </div>
@@ -186,7 +189,7 @@
                                 <input type="number" id="invTempo" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-emerald-500" placeholder="Ex: 12">
                             </div>
                         </div>
-                        <button onclick="calcularInvestimento()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl btn-3d btn-3d-emerald mt-2">
+                        <button onclick="calcularInvestimento()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl btn-3d btn-3d-emerald mt-2 cursor-pointer">
                             Ver Rendimento
                         </button>
                     </div>
@@ -219,101 +222,88 @@
                 </div>
             </div>
 
-            <!-- TELA 4: JOGO / DESAFIO (MANTIDO E INTEGRADO) -->
-            <div id="view-jogo" class="view-section hidden flex-1 flex flex-col h-full bg-slate-50 p-4">
-                
-                <!-- Placar do Jogo -->
-                <div id="gameHeaderInfo" class="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                    <div>
-                        <span class="block text-xs text-slate-400 uppercase font-bold">Pontos</span>
-                        <span id="scoreDisplay" class="text-xl font-bold text-purple-600">0</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="block text-xs text-slate-400 uppercase font-bold">Rodada</span>
-                        <span id="roundDisplay" class="text-xl font-bold text-slate-700">1/5</span>
-                    </div>
-                </div>
-
-                <!-- Pergunta do Jogo -->
-                <div id="gameScreenArea" class="flex-1 flex flex-col slide-up">
-                    <div class="bg-white border-2 border-slate-100 rounded-2xl p-5 mb-4 shadow-sm relative">
-                        <p id="questionText" class="text-[1.05rem] leading-relaxed text-slate-600 font-medium"></p>
-                        <div class="mt-4 pt-4 border-t-2 border-dashed border-slate-100">
-                            <p id="questionAction" class="font-bold text-slate-800 text-lg flex items-center gap-2">
-                                <i class="ph-duotone ph-question text-purple-500 text-xl"></i>
-                                <span></span>
-                            </p>
-                        </div>
-                    </div>
-                    <div id="optionsContainer" class="space-y-3 pb-6"></div>
-                </div>
-
-                <!-- Feedback do Jogo -->
-                <div id="feedbackScreen" class="hidden absolute inset-0 z-20 flex flex-col justify-end bg-slate-900/60 backdrop-blur-sm p-4">
-                    <div class="bg-white w-full rounded-3xl p-6 pb-8 shadow-2xl animate-slideUp">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div id="feedbackIconBox" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-lg shrink-0">
-                                <i id="feedbackIcon" class=""></i>
-                            </div>
-                            <div>
-                                <h2 id="feedbackTitle" class="text-xl font-extrabold"></h2>
-                                <p id="feedbackMessage" class="text-sm text-slate-500 font-medium"></p>
-                            </div>
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 text-sm space-y-1">
-                            <p class="font-bold text-slate-600 mb-2">Fórmula: J = C × i × t</p>
-                            <p id="resFormula" class="font-bold text-indigo-600"></p>
-                            <p id="resFinal" class="font-bold text-emerald-600 mt-2 pt-2 border-t border-slate-200 hidden"></p>
-                        </div>
-                        <button onclick="nextRound()" class="w-full text-white font-bold text-lg py-4 rounded-xl btn-3d flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-900">
-                            Continuar <i class="ph-bold ph-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tela Final Jogo -->
-                <div id="endScreen" class="hidden absolute inset-0 bg-white z-30 flex-col items-center justify-center p-6 text-center">
-                    <div class="w-24 h-24 bg-purple-50 rounded-full flex items-center justify-center mb-4">
-                        <i class="ph-fill ph-trophy text-6xl text-yellow-400"></i>
-                    </div>
-                    <h2 class="text-3xl font-extrabold text-slate-800 mb-2">Fim de Jogo!</h2>
+            <!-- TELA 4: JOGO / DESAFIO -->
+            <div id="view-jogo" class="view-section hidden h-full">
+                <!-- Wrapper Flex isolado para evitar conflito com a classe hidden -->
+                <div class="flex-1 flex flex-col h-full bg-slate-50 p-4 relative">
                     
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 w-full mb-6">
-                        <p class="text-xs text-slate-400 font-bold uppercase mb-1">Pontuação Final</p>
-                        <p id="finalScore" class="text-5xl font-extrabold text-purple-600">0</p>
+                    <!-- Placar do Jogo -->
+                    <div id="gameHeaderInfo" class="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <span class="block text-xs text-slate-400 uppercase font-bold">Pontos</span>
+                            <span id="scoreDisplay" class="text-xl font-bold text-purple-600">0</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-xs text-slate-400 uppercase font-bold">Rodada</span>
+                            <span id="roundDisplay" class="text-xl font-bold text-slate-700">1/5</span>
+                        </div>
                     </div>
 
-                    <button onclick="iniciarJogo()" class="w-full bg-purple-600 text-white font-bold py-4 rounded-xl btn-3d mb-3">
-                        Jogar Novamente
-                    </button>
-                    <button onclick="navigate('home')" class="w-full bg-slate-200 text-slate-700 font-bold py-4 rounded-xl btn-3d">
-                        Voltar ao Menu
-                    </button>
+                    <!-- Pergunta do Jogo -->
+                    <div id="gameScreenArea" class="flex-1 flex flex-col slide-up">
+                        <div class="bg-white border-2 border-slate-100 rounded-2xl p-5 mb-4 shadow-sm relative">
+                            <p id="questionText" class="text-[1.05rem] leading-relaxed text-slate-600 font-medium"></p>
+                            <div class="mt-4 pt-4 border-t-2 border-dashed border-slate-100">
+                                <p id="questionAction" class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                                    <i class="ph-duotone ph-question text-purple-500 text-xl"></i>
+                                    <span></span>
+                                </p>
+                            </div>
+                        </div>
+                        <div id="optionsContainer" class="space-y-3 pb-6"></div>
+                    </div>
+
+                    <!-- Feedback do Jogo (Isolado com Wrapper) -->
+                    <div id="feedbackScreen" class="hidden absolute inset-0 z-20">
+                        <div class="flex flex-col justify-end h-full bg-slate-900/60 backdrop-blur-sm p-4">
+                            <div class="bg-white w-full rounded-3xl p-6 pb-8 shadow-2xl animate-slideUp">
+                                <div class="flex items-center gap-4 mb-4">
+                                    <div id="feedbackIconBox" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-lg shrink-0">
+                                        <i id="feedbackIcon" class=""></i>
+                                    </div>
+                                    <div>
+                                        <h2 id="feedbackTitle" class="text-xl font-extrabold"></h2>
+                                        <p id="feedbackMessage" class="text-sm text-slate-500 font-medium"></p>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 text-sm space-y-1">
+                                    <p class="font-bold text-slate-600 mb-2">Fórmula: J = C × i × t</p>
+                                    <p id="resFormula" class="font-bold text-indigo-600"></p>
+                                    <p id="resFinal" class="font-bold text-emerald-600 mt-2 pt-2 border-t border-slate-200 hidden"></p>
+                                </div>
+                                <button onclick="nextRound()" class="w-full text-white font-bold text-lg py-4 rounded-xl btn-3d flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-900 cursor-pointer">
+                                    Continuar <i class="ph-bold ph-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tela Final Jogo (Isolado com Wrapper) -->
+                    <div id="endScreen" class="hidden absolute inset-0 z-30">
+                        <div class="flex flex-col items-center justify-center h-full bg-white p-6 text-center">
+                            <div class="w-24 h-24 bg-purple-50 rounded-full flex items-center justify-center mb-4">
+                                <i class="ph-fill ph-trophy text-6xl text-yellow-400"></i>
+                            </div>
+                            <h2 class="text-3xl font-extrabold text-slate-800 mb-2">Fim de Jogo!</h2>
+                            
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 w-full mb-6">
+                                <p class="text-xs text-slate-400 font-bold uppercase mb-1">Pontuação Final</p>
+                                <p id="finalScore" class="text-5xl font-extrabold text-purple-600">0</p>
+                            </div>
+
+                            <button onclick="iniciarJogo()" class="w-full bg-purple-600 text-white font-bold py-4 rounded-xl btn-3d mb-3 cursor-pointer">
+                                Jogar Novamente
+                            </button>
+                            <button onclick="navigate('home')" class="w-full bg-slate-200 text-slate-700 font-bold py-4 rounded-xl btn-3d cursor-pointer">
+                                Voltar ao Menu
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
         </div>
     </div>
 
-    <script>
-        // --- UTILIDADES ---
-        const formatMoney = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        
-        let chartCompraInstance = null;
-        let chartInvInstance = null;
-
-        // --- NAVEGAÇÃO ---
-        const views = {
-            'home': { title: 'EducaFinance', sub: 'Matemática para a Vida Real', icon: 'ph-student', color: 'text-blue-100' },
-            'compras': { title: 'Compras e Parcelas', sub: 'Simulador de Empréstimos', icon: 'ph-shopping-cart', color: 'text-red-200' },
-            'investimentos': { title: 'Investimentos', sub: 'Simulador de Rendimentos', icon: 'ph-trend-up', color: 'text-emerald-200' },
-            'jogo': { title: 'Desafio do Juros', sub: 'Teste seus conhecimentos', icon: 'ph-game-controller', color: 'text-purple-200' }
-        };
-
-        function navigate(viewId) {
-            // Esconde todas as views
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            
-            // Mostra a view solicitada
-            const targetView = document.getElementById(`view-${viewId}`);
-            targetV
+    
