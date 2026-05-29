@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -13,9 +12,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <style>
-    /* Remove a rolagem horizontal caso aconteça em telas muito pequenas */
     body { overflow-x: hidden; }
-    /* Estilização para ocultar setas de incremento do input number */
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { 
       -webkit-appearance: none; 
@@ -25,19 +22,16 @@
 </head>
 <body class="bg-slate-100">
 
-  <!-- Onde o App vai ser renderizado -->
   <div id="root"></div>
 
-  <!-- Código React -->
   <script type="text/babel" data-type="module">
-    import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+    import React, { useState } from 'https://esm.sh/react@18.2.0';
     import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
     import { 
       Home, ArrowRight, CheckCircle, AlertCircle, RefreshCw, ChevronRight, 
       Award, XCircle, Grid, Map, Droplet, Square, Triangle, LayoutTemplate, Hammer, Info
     } from 'https://esm.sh/lucide-react@0.292.0';
 
-    // DADOS DOS MÓDULOS (FIGURAS)
     const SHAPES_INFO = {
       quadrado: {
         name: 'Quadrado',
@@ -403,4 +397,123 @@
               </div>
               
               <div className="p-4 sm:p-6 flex-1 flex flex-col bg-slate-50 relative">
-           
+                <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-0 sm:mb-2 relative z-10">
+                  <p className="text-slate-700 text-base sm:text-lg leading-relaxed font-medium">
+                    {currentQ.text}
+                  </p>
+                </div>
+
+                <DrawingBlueprint question={currentQ} />
+
+                {gameState === 'playing' && (
+                  <div className="mt-auto animate-in fade-in duration-300">
+                    <label className="block text-[10px] sm:text-xs font-black text-slate-400 mb-1 sm:mb-2 ml-1 uppercase tracking-widest">Sua Resposta</label>
+                    <div className="flex gap-2 sm:gap-3 mb-2">
+                      <input 
+                        type="number" inputMode="numeric" pattern="[0-9]*"
+                        value={userAnswer}
+                        onChange={(e) => setUserAnswer(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+                        className="flex-1 text-center text-3xl sm:text-4xl font-extrabold text-slate-800 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-slate-300 focus:border-blue-500 focus:outline-none shadow-inner"
+                        placeholder="0"
+                      />
+                      <div className="bg-slate-200 flex items-center justify-center px-3 sm:px-4 rounded-xl sm:rounded-2xl border-2 border-slate-300">
+                        <span className="text-lg sm:text-xl font-bold text-slate-600">{currentQ.unit}</span>
+                      </div>
+                    </div>
+                    
+                    {error && (
+                      <div className="text-red-500 mb-2 sm:mb-4 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-bold ml-1">
+                        <AlertCircle size={16} /> {error}
+                      </div>
+                    )}
+
+                    <button 
+                      onClick={handleVerify}
+                      className={`w-full mt-2 sm:mt-4 text-white text-lg sm:text-xl font-bold py-3 sm:py-4 rounded-xl sm:rounded-2xl active:scale-95 transition-transform shadow-lg ${shapeInfo.color} hover:brightness-110`}
+                    >
+                      Confirmar Medida
+                    </button>
+                  </div>
+                )}
+
+                {gameState === 'feedback' && (
+                  <div className={`mt-auto p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 animate-in slide-in-from-bottom-2 duration-300 ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                      {isCorrect ? <CheckCircle size={28} className="text-emerald-600" /> : <XCircle size={28} className="text-red-600" />}
+                      <h3 className={`text-xl sm:text-2xl font-black ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
+                        {isCorrect ? 'Acertou em cheio!' : 'Medida Incorreta!'}
+                      </h3>
+                    </div>
+                    
+                    {!isCorrect && (
+                      <p className="text-red-800 text-sm sm:text-lg mb-3 sm:mb-4 font-medium">
+                        A resposta correta é <strong>{currentQ.answer} {currentQ.unit}</strong>.
+                      </p>
+                    )}
+
+                    <button 
+                      onClick={nextQuestion}
+                      className={`w-full text-white text-lg sm:text-xl font-bold py-3 sm:py-4 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md ${isCorrect ? 'bg-emerald-600' : 'bg-red-600'}`}
+                    >
+                      Próxima Etapa <ChevronRight size={24} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="sm:hidden bg-slate-50 border-t border-slate-200 p-3 relative z-10">
+                 <p className="text-center text-slate-400 text-[10px] font-bold tracking-widest uppercase">PIBID 2026 - Todos os Direitos Reservados</p>
+              </div>
+            </div>
+            <div className="hidden sm:block"><FooterPIBID /></div>
+          </div>
+        );
+      }
+
+      if (gameState === 'finished') {
+        const isPerfect = score === questions.length;
+        const shapeInfo = SHAPES_INFO[selectedShape];
+        return (
+          <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
+            <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+              <div className={`${isPerfect ? 'bg-emerald-600' : 'bg-orange-500'} p-8 sm:p-10 text-center text-white relative`}>
+                {isPerfect ? <Award size={72} className="mx-auto mb-4 text-yellow-300" /> : <AlertCircle size={72} className="mx-auto mb-4" />}
+                <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">
+                  {isPerfect ? 'Mestre de Obras!' : 'Quase lá!'}
+                </h1>
+                <p className="text-white/90 text-lg sm:text-xl font-medium">
+                  Você acertou {score} de {questions.length} desafios sobre o {shapeInfo.name}.
+                </p>
+              </div>
+              <div className="p-6 sm:p-8 text-center flex flex-col gap-3 sm:gap-4">
+                <button 
+                  onClick={startGame}
+                  className={`w-full text-white text-lg sm:text-xl font-bold py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg ${shapeInfo.color}`}
+                >
+                  <RefreshCw size={24} /> Refazer Módulo
+                </button>
+                <button 
+                  onClick={() => setGameState('menu')}
+                  className="w-full bg-slate-800 hover:bg-slate-900 text-white text-lg sm:text-xl font-bold py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg"
+                >
+                  <Grid size={24} /> Trocar de Figura
+                </button>
+              </div>
+            </div>
+            <FooterPIBID />
+          </div>
+        );
+      }
+
+      return null;
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+
+
+```
