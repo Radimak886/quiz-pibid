@@ -1,567 +1,423 @@
-```html
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EducaFinance EJA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: 'Outfit', sans-serif; }
-        
-        /* Regra de Ouro para Mobile: Impede que cliques "morram" nos ícones ou textos dentro dos botões */
-        button * { pointer-events: none; }
-        
-        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        .slide-up { animation: slideUp 0.4s ease-out forwards; }
-        
-        @keyframes fadeIn {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
+```react
+import React, { useState } from 'react';
+import { 
+  Home, ArrowRight, CheckCircle, 
+  AlertCircle, RefreshCw, ChevronRight, 
+  Award, XCircle, Grid, Map, Droplet, 
+  Square, Triangle, LayoutTemplate, Hammer, Info
+} from 'lucide-react';
 
-        .btn-3d { transition: all 0.1s; box-shadow: 0 4px 0 0 #cbd5e1; cursor: pointer; }
-        .btn-3d:active { transform: translateY(4px); box-shadow: 0 0 0 0 #cbd5e1; }
-        .btn-3d-blue { box-shadow: 0 4px 0 0 #1d4ed8; }
-        .btn-3d-blue:active { transform: translateY(4px); box-shadow: 0 0 0 0 #1d4ed8; }
-        .btn-3d-emerald { box-shadow: 0 4px 0 0 #047857; }
-        .btn-3d-emerald:active { transform: translateY(4px); box-shadow: 0 0 0 0 #047857; }
-        
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    </style>
-</head>
-<!-- Usando w-screen e h-screen com overflow-hidden para travar a tela certinha no mobile -->
-<body class="bg-slate-200 w-screen h-screen overflow-hidden flex items-center justify-center sm:p-4 text-slate-800">
+// DADOS DOS MÓDULOS (FIGURAS)
+const SHAPES_INFO = {
+  quadrado: {
+    name: 'Quadrado',
+    icon: <Square size={40} className="text-blue-500" />,
+    color: 'bg-blue-600',
+    lightColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    textColor: 'text-blue-700',
+    applications: [
+      'Pisos e porcelanatos (cerâmicas individuais).',
+      'Salas e quartos com medidas iguais.',
+      'Canteiros simétricos para horta.'
+    ],
+    rules: [
+      { type: 'Área', text: 'Lado × Lado' },
+      { type: 'Perímetro', text: 'Lado + Lado + Lado + Lado' }
+    ]
+  },
+  retangulo: {
+    name: 'Retângulo',
+    icon: <LayoutTemplate size={40} className="text-amber-500" />,
+    color: 'bg-amber-600',
+    lightColor: 'bg-amber-50',
+    borderColor: 'border-amber-200',
+    textColor: 'text-amber-700',
+    applications: [
+      'Lotes e terrenos convencionais.',
+      'Paredes para pintura e muros.',
+      'Forro de teto e tapetes.'
+    ],
+    rules: [
+      { type: 'Área', text: 'Base × Altura' },
+      { type: 'Perímetro', text: 'Soma de todos os 4 lados' }
+    ]
+  },
+  triangulo: {
+    name: 'Triângulo',
+    icon: <Triangle size={40} className="text-emerald-500" />,
+    color: 'bg-emerald-600',
+    lightColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
+    textColor: 'text-emerald-700',
+    applications: [
+      'Oitão/Frontão de telhados.',
+      'Tesouras e estruturas metálicas.',
+      'Terrenos de esquina e recortes de piso.'
+    ],
+    rules: [
+      { type: 'Área', text: '(Base × Altura) dividido por 2' },
+      { type: 'Perímetro', text: 'Soma de todos os 3 lados' }
+    ]
+  }
+};
 
-    <!-- Uso de 100dvh (Dynamic Viewport Height) para corrigir bug da barra de navegação dos celulares -->
-    <div class="w-full h-[100dvh] sm:h-[90vh] max-w-md bg-white sm:rounded-[2rem] shadow-2xl overflow-hidden relative flex flex-col border border-slate-200">
-        
-        <!-- Header Global -->
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 p-5 text-white flex items-center justify-between shadow-md z-20 shrink-0 relative">
-            <div class="absolute -right-10 -top-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl pointer-events-none"></div>
-            
-            <div class="flex items-center gap-3 relative z-10 w-full">
-                <button id="btnBack" onclick="navigate('home')" type="button" class="hidden hover:bg-white/20 p-2 rounded-full transition-colors relative z-30 cursor-pointer">
-                    <i class="ph-bold ph-arrow-left text-xl"></i>
-                </button>
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm shrink-0">
-                    <i id="headerIcon" class="ph-fill ph-student text-2xl text-blue-100"></i>
-                </div>
-                <div>
-                    <h1 id="headerTitle" class="text-xl font-extrabold tracking-tight">EducaFinance</h1>
-                    <p id="headerSubtitle" class="text-xs text-blue-200 font-medium">Matemática para a Vida Real</p>
-                </div>
-            </div>
-        </div>
+export default function App() {
+  const [gameState, setGameState] = useState('menu'); 
+  const [selectedShape, setSelectedShape] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [userAnswer, setUserAnswer] = useState('');
+  const [score, setScore] = useState(0);
+  const [error, setError] = useState('');
+  const [isCorrect, setIsCorrect] = useState(false);
 
-        <!-- Área de Conteúdo Rolável -->
-        <div class="flex-1 overflow-y-auto bg-slate-50 relative z-10 scroll-smooth">
+  // GERADOR DE QUESTÕES ESPECÍFICAS
+  const generateQuestions = (shape) => {
+    const q = [];
+    
+    if (shape === 'quadrado') {
+      let l1 = Math.floor(Math.random() * 6) + 3;
+      q.push({ shape: 'square', type: 'area', title: 'Piso do Quarto', text: `Seu João tem um quarto quadrado de ${l1}m de lado. Quantos metros quadrados (m²) de cerâmica ele precisa comprar?`, base: l1, height: l1, answer: l1 * l1, unit: 'm²' });
 
-            <!-- TELA 1: MENU PRINCIPAL (HOME) -->
-            <div id="view-home" class="view-section p-6 space-y-6 fade-in">
-                <div class="bg-blue-100 text-blue-800 p-4 rounded-2xl border border-blue-200">
-                    <p class="font-bold text-lg">Olá, estudante!</p>
-                    <p class="text-sm">O que vamos calcular ou praticar hoje?</p>
-                </div>
+      let l2 = Math.floor(Math.random() * 10) + 10;
+      q.push({ shape: 'square', type: 'perimeter', title: 'Cercando Lote', text: `Para cercar um lote perfeitamente quadrado de ${l2}m de lado, quantos metros de arame são necessários para dar uma volta?`, base: l2, height: l2, answer: l2 * 4, unit: 'm' });
 
-                <div class="grid grid-cols-1 gap-4">
-                    <button onclick="navigate('compras')" type="button" class="w-full relative z-20 bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-red-400 active:bg-red-50 transition-all text-left group">
-                        <div class="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shrink-0">
-                            <i class="ph-fill ph-shopping-cart"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg text-slate-800">Compras e Parcelas</h3>
-                            <p class="text-sm text-slate-500 leading-tight">Calcule juros de empréstimos e carnês.</p>
-                        </div>
-                    </button>
+      let l3 = Math.floor(Math.random() * 4) + 2;
+      q.push({ shape: 'square', type: 'area', title: 'Canteiro Simétrico', text: `Dona Ana quer plantar grama em um canteiro quadrado de ${l3}m de lado. Qual é a área total que receberá a grama?`, base: l3, height: l3, answer: l3 * l3, unit: 'm²' });
 
-                    <button onclick="navigate('investimentos')" type="button" class="w-full relative z-20 bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-emerald-400 active:bg-emerald-50 transition-all text-left group">
-                        <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shrink-0">
-                            <i class="ph-fill ph-trend-up"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg text-slate-800">Meus Investimentos</h3>
-                            <p class="text-sm text-slate-500 leading-tight">Veja seu dinheiro render com o tempo.</p>
-                        </div>
-                    </button>
+      let l4 = Math.floor(Math.random() * 5) + 3;
+      q.push({ shape: 'square', type: 'perimeter', title: 'Rodapé', text: `Uma sala quadrada tem ${l4}m de lado. Quantos metros lineares de rodapé são necessários? (Ignore as portas).`, base: l4, height: l4, answer: l4 * 4, unit: 'm' });
+    }
 
-                    <button onclick="navigate('jogo')" type="button" class="w-full relative z-20 bg-white border-2 border-slate-200 p-5 rounded-2xl flex items-center gap-4 hover:border-purple-400 active:bg-purple-50 transition-all text-left group">
-                        <div class="w-14 h-14 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shrink-0">
-                            <i class="ph-fill ph-game-controller"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg text-slate-800">Desafio do Juros</h3>
-                            <p class="text-sm text-slate-500 leading-tight">Teste seus conhecimentos jogando!</p>
-                        </div>
-                    </button>
-                </div>
-            </div>
+    if (shape === 'retangulo') {
+      let w1 = Math.floor(Math.random() * 4) + 3; let h1 = w1 + Math.floor(Math.random() * 3) + 1;
+      q.push({ shape: 'rectangle', type: 'area', title: 'Pintura da Parede', text: `O muro retangular mede ${h1}m de comprimento por ${w1}m de altura. Qual a área total a ser pintada?`, base: h1, height: w1, answer: w1 * h1, unit: 'm²' });
 
-            <!-- TELA 2: SIMULADOR DE COMPRAS -->
-            <div id="view-compras" class="view-section hidden p-6 fade-in">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                        <i class="ph-bold ph-calculator text-red-500"></i> Dados da Compra
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-500 mb-1">Valor do Produto (R$)</label>
-                            <input type="number" id="compraValor" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200" placeholder="Ex: 1500">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-500 mb-1">Taxa (% ao mês)</label>
-                                <input type="number" id="compraTaxa" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-red-500" placeholder="Ex: 3">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-500 mb-1">Prazo (Meses)</label>
-                                <input type="number" id="compraTempo" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-red-500" placeholder="Ex: 12">
-                            </div>
-                        </div>
-                        <button onclick="calcularCompra()" type="button" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl btn-3d mt-2 relative z-20">
-                            Calcular Parcelas e Juros
-                        </button>
-                    </div>
-                </div>
+      let w2 = Math.floor(Math.random() * 10) + 10; let h2 = w2 + Math.floor(Math.random() * 5) + 5;
+      q.push({ shape: 'rectangle', type: 'perimeter', title: 'Cerca do Terreno', text: `Um lote retangular tem ${w2}m de frente por ${h2}m de fundo. Quantos metros de tela são precisos para o contorno total?`, base: h2, height: w2, answer: (w2 * 2) + (h2 * 2), unit: 'm' });
 
-                <div id="resCompraArea" class="hidden slide-up">
-                    <div class="bg-red-50 border border-red-200 p-5 rounded-2xl mb-6">
-                        <div class="flex justify-between items-end mb-4 border-b border-red-200 pb-3">
-                            <span class="text-slate-600 font-semibold">Valor da Parcela:</span>
-                            <span class="text-3xl font-extrabold text-red-600" id="compraParcela">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-slate-500">Valor do Produto:</span>
-                            <span class="font-bold text-slate-700" id="compraProdutoVal">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-slate-500">Total de Juros Pagos:</span>
-                            <span class="font-bold text-red-500" id="compraJurosVal">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between text-sm font-bold mt-3 pt-3 border-t border-red-200">
-                            <span class="text-slate-700">Total a Pagar:</span>
-                            <span class="text-slate-800" id="compraTotalVal">R$ 0,00</span>
-                        </div>
-                    </div>
+      let w3 = Math.floor(Math.random() * 3) + 4; let h3 = w3 + Math.floor(Math.random() * 3) + 1;
+      q.push({ shape: 'rectangle', type: 'area', title: 'Forro PVC', text: `Uma loja retangular mede ${w3}m de largura por ${h3}m de comprimento. Qual a área de forro PVC necessária para o teto?`, base: h3, height: w3, answer: w3 * h3, unit: 'm²' });
 
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-slate-700 text-center mb-2">Composição do Pagamento</h3>
-                        <div class="relative h-48 w-full pointer-events-none">
-                            <canvas id="compraChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      let w4 = Math.floor(Math.random() * 4) + 3; let h4 = w4 + Math.floor(Math.random() * 2) + 1;
+      q.push({ shape: 'rectangle', type: 'perimeter', title: 'Borda da Piscina', text: `Para colocar piso antiderrapante na borda de uma piscina retangular de ${w4}m por ${h4}m, precisamos saber seu perímetro. Qual é?`, base: h4, height: w4, answer: (w4 * 2) + (h4 * 2), unit: 'm' });
+    }
 
-            <!-- TELA 3: SIMULADOR DE INVESTIMENTOS -->
-            <div id="view-investimentos" class="view-section hidden p-6 fade-in">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                        <i class="ph-bold ph-piggy-bank text-emerald-500"></i> Dados do Investimento
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-500 mb-1">Valor Guardado (R$)</label>
-                            <input type="number" id="invValor" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200" placeholder="Ex: 1000">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-500 mb-1">Rendimento (% a.m.)</label>
-                                <input type="number" id="invTaxa" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-emerald-500" placeholder="Ex: 1">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-500 mb-1">Tempo (Meses)</label>
-                                <input type="number" id="invTempo" class="w-full bg-slate-100 border border-slate-300 rounded-xl p-3 text-lg font-bold focus:outline-none focus:border-emerald-500" placeholder="Ex: 12">
-                            </div>
-                        </div>
-                        <button onclick="calcularInvestimento()" type="button" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl btn-3d btn-3d-emerald mt-2 relative z-20">
-                            Ver Rendimento
-                        </button>
-                    </div>
-                </div>
+    if (shape === 'triangulo') {
+      let b1 = (Math.floor(Math.random() * 4) + 2) * 2; 
+      let h1 = Math.floor(Math.random() * 3) + 2;
+      q.push({ shape: 'triangle', type: 'area', title: 'Oitão do Telhado', text: `Para fechar o oitão (parte triangular do telhado), o pedreiro mediu a base de ${b1}m e a altura do meio de ${h1}m. Qual a área de tijolos?`, base: b1, height: h1, answer: (b1 * h1) / 2, unit: 'm²' });
 
-                <div id="resInvArea" class="hidden slide-up">
-                    <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl mb-6">
-                        <div class="flex justify-between items-end mb-4 border-b border-emerald-200 pb-3">
-                            <span class="text-slate-600 font-semibold">Dinheiro Total:</span>
-                            <span class="text-3xl font-extrabold text-emerald-600" id="invTotalVal">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-slate-500">Valor Inicial:</span>
-                            <span class="font-bold text-slate-700" id="invInicialVal">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-slate-500">Juros Ganhos (Lucro):</span>
-                            <span class="font-bold text-emerald-500" id="invJurosVal">R$ 0,00</span>
-                        </div>
-                    </div>
+      let s1 = Math.floor(Math.random() * 3) + 3; let s2 = s1 + 1; let s3 = s1 + 2;
+      q.push({ shape: 'triangle', type: 'perimeter', title: 'Canteiro de Esquina', text: `Um canteiro triangular de esquina será cercado. Seus lados medem ${s1}m, ${s2}m e ${s3}m. Quantos metros de mureta serão feitos no total?`, base: s1, sideA: s2, sideB: s3, answer: s1 + s2 + s3, unit: 'm' });
 
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-slate-700 text-center mb-2">Crescimento do Dinheiro</h3>
-                        <div class="relative h-48 w-full pointer-events-none">
-                            <canvas id="invChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      let b2 = (Math.floor(Math.random() * 3) + 3) * 2; 
+      let h2 = Math.floor(Math.random() * 4) + 3;
+      q.push({ shape: 'triangle', type: 'area', title: 'Lona de Sombra', text: `Foi cortada uma lona em formato de triângulo com base de ${b2}m e altura de ${h2}m. Qual é a área de sombra que ela faz?`, base: b2, height: h2, answer: (b2 * h2) / 2, unit: 'm²' });
 
-            <!-- TELA 4: JOGO / DESAFIO -->
-            <div id="view-jogo" class="view-section hidden h-full relative">
-                <div class="flex flex-col h-full bg-slate-50 p-4">
-                    
-                    <div id="gameHeaderInfo" class="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 shrink-0">
-                        <div>
-                            <span class="block text-xs text-slate-400 uppercase font-bold">Pontos</span>
-                            <span id="scoreDisplay" class="text-xl font-bold text-purple-600">0</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="block text-xs text-slate-400 uppercase font-bold">Rodada</span>
-                            <span id="roundDisplay" class="text-xl font-bold text-slate-700">1/5</span>
-                        </div>
-                    </div>
+      let t1 = Math.floor(Math.random() * 4) + 4;
+      q.push({ shape: 'triangle', type: 'perimeter', title: 'Ferragem da Tesoura', text: `Uma tesoura metálica (triangular) precisa de reforço externo. Seus três lados medem ${t1}m cada um. Qual o perímetro?`, base: t1, sideA: t1, sideB: t1, answer: t1 * 3, unit: 'm' });
+    }
 
-                    <div id="gameScreenArea" class="flex-1 flex flex-col slide-up overflow-y-auto">
-                        <div class="bg-white border-2 border-slate-100 rounded-2xl p-5 mb-4 shadow-sm relative shrink-0">
-                            <p id="questionText" class="text-[1.05rem] leading-relaxed text-slate-600 font-medium"></p>
-                            <div class="mt-4 pt-4 border-t-2 border-dashed border-slate-100">
-                                <p id="questionAction" class="font-bold text-slate-800 text-lg flex items-center gap-2">
-                                    <i class="ph-duotone ph-question text-purple-500 text-xl"></i>
-                                    <span></span>
-                                </p>
-                            </div>
-                        </div>
-                        <!-- Botões de opções do jogo -->
-                        <div id="optionsContainer" class="space-y-3 pb-6 relative z-20"></div>
-                    </div>
-                </div>
-            </div>
+    // Retorna as questões embaralhadas
+    return q.sort(() => 0.5 - Math.random()).slice(0, 4);
+  };
 
-        </div>
+  const selectModule = (shape) => {
+    setSelectedShape(shape);
+    setGameState('intro');
+  };
 
-        <!-- MODAIS FIXOS (Sobrepõem tudo com z-50) -->
-        <!-- Feedback do Jogo -->
-        <div id="feedbackScreen" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-            <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl animate-slideUp">
-                <div class="flex items-center gap-4 mb-4">
-                    <div id="feedbackIconBox" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0">
-                        <i id="feedbackIcon" class=""></i>
-                    </div>
-                    <div>
-                        <h2 id="feedbackTitle" class="text-xl font-extrabold"></h2>
-                        <p id="feedbackMessage" class="text-sm text-slate-500 font-medium"></p>
-                    </div>
-                </div>
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 text-sm space-y-1">
-                    <p class="font-bold text-slate-600 mb-2">Fórmula: J = C × i × t</p>
-                    <p id="resFormula" class="font-bold text-indigo-600"></p>
-                    <p id="resFinal" class="font-bold text-emerald-600 mt-2 pt-2 border-t border-slate-200 hidden"></p>
-                </div>
-                <button onclick="nextRound()" type="button" class="w-full text-white font-bold text-lg py-4 rounded-xl btn-3d flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-900 relative z-50">
-                    Continuar <i class="ph-bold ph-arrow-right"></i>
-                </button>
-            </div>
-        </div>
+  const startGame = () => {
+    // 1. Gera as questões primeiro
+    const newQuestions = generateQuestions(selectedShape);
+    // 2. Salva no estado
+    setQuestions(newQuestions);
+    // 3. Só depois libera a tela de jogo
+    setCurrentIdx(0);
+    setScore(0);
+    setUserAnswer('');
+    setError('');
+    setGameState('playing');
+  };
 
-        <!-- Tela Final Jogo -->
-        <div id="endScreen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-white p-6 text-center w-full h-full">
-            <div class="w-full max-w-md flex flex-col items-center">
-                <div class="w-24 h-24 bg-purple-50 rounded-full flex items-center justify-center mb-4">
-                    <i class="ph-fill ph-trophy text-6xl text-yellow-400"></i>
-                </div>
-                <h2 class="text-3xl font-extrabold text-slate-800 mb-2">Fim de Jogo!</h2>
-                
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 w-full mb-6">
-                    <p class="text-xs text-slate-400 font-bold uppercase mb-1">Pontuação Final</p>
-                    <p id="finalScore" class="text-5xl font-extrabold text-purple-600">0</p>
-                </div>
+  const handleVerify = () => {
+    if (!userAnswer || userAnswer.trim() === '') {
+      setError('Por favor, digite um valor numérico.');
+      return;
+    }
+    setError('');
+    const currentQ = questions[currentIdx];
+    const numericAnswer = parseInt(userAnswer, 10);
+    const correct = numericAnswer === currentQ.answer;
+    
+    setIsCorrect(correct);
+    if (correct) setScore(prev => prev + 1);
+    setGameState('feedback');
+  };
 
-                <button onclick="iniciarJogo()" type="button" class="w-full bg-purple-600 text-white font-bold py-4 rounded-xl btn-3d mb-3 relative z-50">
-                    Jogar Novamente
-                </button>
-                <button onclick="navigate('home')" type="button" class="w-full bg-slate-200 text-slate-700 font-bold py-4 rounded-xl btn-3d relative z-50">
-                    Voltar ao Menu
-                </button>
-            </div>
-        </div>
+  const nextQuestion = () => {
+    setUserAnswer('');
+    setIsCorrect(false);
+    if (currentIdx + 1 < questions.length) {
+      setCurrentIdx(prev => prev + 1);
+      setGameState('playing');
+    } else {
+      setGameState('finished');
+    }
+  };
 
+  const FooterPIBID = () => (
+    <div className="mt-6 sm:mt-8 text-center pb-4 w-full">
+      <p className="text-slate-400 text-xs sm:text-sm font-bold tracking-widest uppercase">
+        PIBID 2026 - Todos os Direitos Reservados
+      </p>
     </div>
+  );
 
-    <script>
-        const formatMoney = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        
-        let chartCompraInstance = null;
-        let chartInvInstance = null;
+  // --- COMPONENTE DO DESENHO TÉCNICO (SVG) ---
+  const DrawingBlueprint = ({ question }) => {
+    if (!question) return null;
+    
+    const isArea = question.type === 'area';
+    const isTri = question.shape === 'triangle';
+    
+    return (
+      <div className="w-full flex justify-center my-3 sm:my-6 scale-90 sm:scale-100">
+        <div className="relative w-56 h-40 mt-4 ml-4 flex items-center justify-center">
+          
+          <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible drop-shadow-md">
+            <defs>
+              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1.5" fill="#3b82f6" opacity="0.3" />
+              </pattern>
+            </defs>
 
-        const views = {
-            'home': { title: 'EducaFinance', sub: 'Matemática para a Vida Real', icon: 'ph-student', color: 'text-blue-100' },
-            'compras': { title: 'Compras e Parcelas', sub: 'Simulador de Empréstimos', icon: 'ph-shopping-cart', color: 'text-red-200' },
-            'investimentos': { title: 'Investimentos', sub: 'Simulador de Rendimentos', icon: 'ph-trend-up', color: 'text-emerald-200' },
-            'jogo': { title: 'Desafio do Juros', sub: 'Teste seus conhecimentos', icon: 'ph-game-controller', color: 'text-purple-200' }
-        };
+            {question.shape === 'square' && (
+              <rect x="15" y="15" width="70" height="70" 
+                fill={isArea ? 'url(#grid)' : 'none'} 
+                stroke={isArea ? '#64748b' : '#f97316'} 
+                strokeWidth={isArea ? '2' : '6'} 
+                className={isArea ? 'fill-blue-100' : ''}
+              />
+            )}
 
-        // Torna a função de navegação global e blindada
-        window.navigate = function(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            {question.shape === 'rectangle' && (
+              <rect x="5" y="25" width="90" height="50" 
+                fill={isArea ? 'url(#grid)' : 'none'} 
+                stroke={isArea ? '#64748b' : '#f97316'} 
+                strokeWidth={isArea ? '2' : '6'} 
+                className={isArea ? 'fill-blue-100' : ''}
+              />
+            )}
+
+            {question.shape === 'triangle' && (
+              <polygon points="50,15 10,85 90,85" 
+                fill={isArea ? 'url(#grid)' : 'none'} 
+                stroke={isArea ? '#64748b' : '#f97316'} 
+                strokeWidth={isArea ? '2' : '6'} 
+                className={isArea ? 'fill-blue-100' : ''}
+              />
+            )}
+
+            {isTri && isArea && (
+              <line x1="50" y1="15" x2="50" y2="85" stroke="#64748b" strokeWidth="2" strokeDasharray="4" />
+            )}
+          </svg>
+
+          <span className="absolute bg-white/90 px-2 py-1 rounded font-bold text-[10px] sm:text-xs text-slate-700 shadow-sm z-10">
+            {isArea ? 'ÁREA (?)' : 'CONTORNO (?)'}
+          </span>
+
+          <div className={`absolute w-full text-center font-extrabold text-slate-800 bg-slate-200/90 rounded-md py-0.5 shadow-sm px-2 text-sm sm:text-base w-max left-1/2 -translate-x-1/2 ${isTri ? '-bottom-6' : '-top-7'}`}>
+            {question.base}m {isTri && !isArea && ' (Base)'}
+          </div>
+
+          {(!isTri || isArea) && (
+            <div className="absolute -left-12 h-full flex items-center justify-center font-extrabold text-slate-800">
+              <span className="-rotate-90 bg-slate-200/90 px-2 py-0.5 rounded-md shadow-sm whitespace-nowrap text-sm sm:text-base">
+                {question.height}m {isTri && '(Altura)'}
+              </span>
+            </div>
+          )}
+
+          {isTri && !isArea && (
+            <>
+              <div className="absolute top-1/2 -translate-y-1/2 -left-8 font-extrabold text-slate-800 bg-slate-200/90 px-2 rounded-md text-sm">
+                {question.sideA}m
+              </div>
+              <div className="absolute top-1/2 -translate-y-1/2 -right-8 font-extrabold text-slate-800 bg-slate-200/90 px-2 rounded-md text-sm">
+                {question.sideB}m
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
+  // TELA 1: MENU DE SELEÇÃO
+  // ==========================================
+  if (gameState === 'menu') {
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
+        <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="bg-slate-800 p-8 sm:p-10 text-center text-white relative">
+            <Hammer size={48} className="mx-auto mb-3 text-blue-400" />
+            <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Módulo EJA</h1>
+            <p className="text-slate-300 text-sm sm:text-base font-medium">Selecione a figura para estudar</p>
+          </div>
+          <div className="p-4 sm:p-6 flex flex-col gap-4">
+            {Object.keys(SHAPES_INFO).map(key => {
+              const shape = SHAPES_INFO[key];
+              return (
+                <button 
+                  key={key}
+                  onClick={() => selectModule(key)}
+                  className="w-full flex items-center p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all active:scale-95 group text-left shadow-sm"
+                >
+                  <div className={`p-3 rounded-xl bg-slate-100 group-hover:bg-white transition-colors`}>
+                    {shape.icon}
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <h2 className="text-xl font-bold text-slate-800">{shape.name}</h2>
+                    <p className="text-sm text-slate-500 font-medium mt-1">Área e Perímetro</p>
+                  </div>
+                  <ChevronRight size={24} className="text-slate-300 group-hover:text-blue-500" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <FooterPIBID />
+      </div>
+    );
+  }
+
+  // ==========================================
+  // TELA 2: INTRODUÇÃO DA FIGURA (APLICAÇÕES)
+  // ==========================================
+  if (gameState === 'intro') {
+    const shape = SHAPES_INFO[selectedShape];
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
+        <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+          <div className={`${shape.color} p-8 sm:p-10 text-center text-white`}>
+            <div className="bg-white/20 w-max mx-auto p-4 rounded-2xl mb-4 backdrop-blur-sm">
+              {React.cloneElement(shape.icon, { className: 'text-white', size: 56 })}
+            </div>
+            <h1 className="text-3xl font-extrabold mb-2">O {shape.name}</h1>
+            <p className="text-white/80 font-medium">Aplicações Práticas</p>
+          </div>
+          
+          <div className="p-5 sm:p-6 space-y-6">
             
-            const targetView = document.getElementById(`view-${viewId}`);
-            if(targetView) targetView.classList.remove('hidden');
+            <div>
+              <h3 className="flex items-center gap-2 text-slate-800 font-bold mb-3 uppercase tracking-wider text-sm">
+                <Map size={18} className="text-slate-400" /> Onde usamos na obra?
+              </h3>
+              <ul className="space-y-2">
+                {shape.applications.map((app, i) => (
+                  <li key={i} className="flex items-start gap-2 text-slate-600 text-sm sm:text-base font-medium">
+                    <span className={`${shape.textColor} font-bold`}>•</span> {app}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={`${shape.lightColor} ${shape.borderColor} border-2 rounded-2xl p-4`}>
+               <h3 className="flex items-center gap-2 text-slate-800 font-bold mb-3 uppercase tracking-wider text-sm">
+                <Info size={18} className={shape.textColor} /> Fórmulas Simples
+              </h3>
+              <div className="space-y-3">
+                {shape.rules.map((rule, i) => (
+                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                    <span className={`text-xs font-black uppercase tracking-widest ${shape.textColor} block mb-1`}>{rule.type}</span>
+                    <span className="text-slate-700 font-bold sm:text-base text-sm">{rule.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              onClick={startGame}
+              className={`w-full ${shape.color} hover:brightness-110 text-white text-lg sm:text-xl font-bold py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg`}
+            >
+              Começar Exercícios <ArrowRight size={24} />
+            </button>
             
-            document.getElementById('headerTitle').innerText = views[viewId].title;
-            document.getElementById('headerSubtitle').innerText = views[viewId].sub;
-            document.getElementById('headerIcon').className = `ph-fill ${views[viewId].icon} text-2xl ${views[viewId].color}`;
+            <button 
+              onClick={() => setGameState('menu')}
+              className="w-full text-slate-500 font-bold py-2 text-sm uppercase tracking-wider hover:text-slate-800"
+            >
+              Voltar ao Menu
+            </button>
+          </div>
+        </div>
+        <FooterPIBID />
+      </div>
+    );
+  }
+
+  // ==========================================
+  // TELA 3 e 4: QUIZ E FEEDBACK
+  // ==========================================
+  const currentQ = questions[currentIdx];
+
+  if ((gameState === 'playing' || gameState === 'feedback') && currentQ) {
+    const shapeInfo = SHAPES_INFO[selectedShape];
+    const progress = ((currentIdx) / questions.length) * 100;
+
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 font-sans">
+        <div className="bg-white sm:max-w-md w-full sm:rounded-3xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0 flex flex-col relative">
+          
+          <div className="w-full bg-slate-200 h-2">
+            <div 
+              className={`${shapeInfo.color} h-2 transition-all duration-500 ease-out`}
+              style={{ width: `${gameState === 'feedback' ? ((currentIdx + 1) / questions.length) * 100 : progress}%` }}
+            ></div>
+          </div>
+
+          <div className={`${shapeInfo.color} p-4 sm:p-6 flex items-center gap-4 text-white shadow-md relative z-10`}>
+            <div className="bg-white/20 p-2 sm:p-3 rounded-2xl shadow-sm">
+              {React.cloneElement(shapeInfo.icon, { className: 'text-white' })}
+            </div>
+            <div>
+              <span className="text-white/80 text-[10px] sm:text-xs font-black tracking-widest uppercase">Questão {currentIdx + 1} de {questions.length}</span>
+              <h2 className="text-xl sm:text-2xl font-bold leading-tight mt-0.5">{currentQ.title}</h2>
+            </div>
+          </div>
+          
+          <div className="p-4 sm:p-6 flex-1 flex flex-col bg-slate-50 relative">
             
-            const btnBack = document.getElementById('btnBack');
-            if(viewId === 'home') {
-                btnBack.classList.add('hidden');
-            } else {
-                btnBack.classList.remove('hidden');
-            }
+            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-0 sm:mb-2 relative z-10">
+              <p className="text-slate-700 text-base sm:text-lg leading-relaxed font-medium">
+                {currentQ.text}
+              </p>
+            </div>
 
-            // Garante que modais residuais do jogo fechem se clicar em voltar
-            document.getElementById('endScreen').classList.add('hidden');
-            document.getElementById('feedbackScreen').classList.add('hidden');
+            <DrawingBlueprint question={currentQ} />
 
-            if(viewId === 'jogo') {
-                iniciarJogo();
-            }
-        };
-
-        window.calcularCompra = function() {
-            const C = parseFloat(document.getElementById('compraValor').value);
-            const i = parseFloat(document.getElementById('compraTaxa').value);
-            const t = parseFloat(document.getElementById('compraTempo').value);
-
-            if(!C || !i || !t) {
-                alert("Por favor, preencha todos os campos!");
-                return;
-            }
-
-            const J = C * (i / 100) * t;
-            const M = C + J;
-            const parcela = M / t;
-
-            document.getElementById('compraParcela').innerText = formatMoney(parcela);
-            document.getElementById('compraProdutoVal').innerText = formatMoney(C);
-            document.getElementById('compraJurosVal').innerText = formatMoney(J);
-            document.getElementById('compraTotalVal').innerText = formatMoney(M);
-
-            document.getElementById('resCompraArea').classList.remove('hidden');
-
-            // Proteção contra falha de rede na biblioteca do gráfico
-            if (typeof Chart !== 'undefined') {
-                const ctx = document.getElementById('compraChart').getContext('2d');
-                if(chartCompraInstance) chartCompraInstance.destroy();
-
-                chartCompraInstance = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Produto', 'Juros'],
-                        datasets: [{ data: [C, J], backgroundColor: ['#cbd5e1', '#ef4444'], borderWidth: 0 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-                });
-            }
-        };
-
-        window.calcularInvestimento = function() {
-            const C = parseFloat(document.getElementById('invValor').value);
-            const i = parseFloat(document.getElementById('invTaxa').value);
-            const t = parseInt(document.getElementById('invTempo').value);
-
-            if(!C || !i || !t) {
-                alert("Por favor, preencha todos os campos!");
-                return;
-            }
-
-            const J = C * (i / 100) * t;
-            const M = C + J;
-
-            document.getElementById('invTotalVal').innerText = formatMoney(M);
-            document.getElementById('invInicialVal').innerText = formatMoney(C);
-            document.getElementById('invJurosVal').innerText = formatMoney(J);
-
-            document.getElementById('resInvArea').classList.remove('hidden');
-
-            if (typeof Chart !== 'undefined') {
-                const labels = [];
-                const dataCrescimento = [];
-                for(let mes = 0; mes <= t; mes++) {
-                    labels.push(`Mês ${mes}`);
-                    dataCrescimento.push(C + (C * (i/100) * mes));
-                }
-
-                const ctx = document.getElementById('invChart').getContext('2d');
-                if(chartInvInstance) chartInvInstance.destroy();
-
-                chartInvInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'R$', data: dataCrescimento, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 3, fill: true, tension: 0.1
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false } }, plugins: { legend: { display: false } } }
-                });
-            }
-        };
-
-        const TOTAL_ROUNDS = 5;
-        let currentRound = 1;
-        let score = 0;
-        let correctAnswer = 0;
-        let currentData = {};
-
-        const scenarios = [
-            "Você comprou um celular de {C}. A loja cobrou juros simples de {i}% ao mês por {t} meses.",
-            "Você emprestou {C} para um amigo com taxa de {i}% ao mês. Ele pagará em {t} meses.",
-            "Um empréstimo de {C} no banco tem juros simples de {i}% ao mês, para pagar em {t} meses."
-        ];
-
-        window.iniciarJogo = function() {
-            currentRound = 1;
-            score = 0;
-            document.getElementById('scoreDisplay').innerText = score;
-            document.getElementById('endScreen').classList.add('hidden');
-            document.getElementById('gameScreenArea').classList.remove('hidden');
-            carregarRodada();
-        };
-
-        window.carregarRodada = function() {
-            document.getElementById('feedbackScreen').classList.add('hidden');
-            document.getElementById('roundDisplay').innerText = `${currentRound}/${TOTAL_ROUNDS}`;
-
-            const C = Math.floor(Math.random() * 10 + 5) * 100; 
-            const i = Math.floor(Math.random() * 5) + 1; 
-            const t = Math.floor(Math.random() * 6) + 2; 
-
-            const J = C * (i / 100) * t;
-            const M = C + J;
-            const isJuros = Math.random() < 0.5;
-            currentData = { C, i, t, J, M, isJuros };
-
-            const text = scenarios[Math.floor(Math.random() * scenarios.length)]
-                .replace('{C}', `<strong class="text-blue-600">${formatMoney(C)}</strong>`)
-                .replace('{i}', `<strong class="text-orange-500">${i}</strong>`)
-                .replace('{t}', `<strong class="text-emerald-600">${t}</strong>`);
-
-            document.getElementById('questionText').innerHTML = text;
-            const actionSpan = document.querySelector('#questionAction span');
-            
-            if (isJuros) {
-                actionSpan.innerText = "Qual o valor SÓ DOS JUROS?";
-                correctAnswer = J;
-            } else {
-                actionSpan.innerText = "Qual o valor TOTAL (Montante)?";
-                correctAnswer = M;
-            }
-
-            let options = [correctAnswer, (isJuros ? M : J), C * (i/100), correctAnswer + 100];
-            options = [...new Set(options)];
-            while(options.length < 4) {
-                options.push(correctAnswer + Math.floor(Math.random() * 5 + 1) * 50);
-                options = [...new Set(options)];
-            }
-            options.sort(() => Math.random() - 0.5);
-
-            const container = document.getElementById('optionsContainer');
-            container.innerHTML = '';
-            
-            options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.type = "button";
-                btn.className = "w-full text-left bg-white border border-slate-200 p-4 rounded-xl font-bold text-lg text-slate-700 btn-3d hover:border-purple-400 relative z-20";
-                btn.innerText = formatMoney(opt);
-                btn.onclick = () => verificarResposta(opt);
-                container.appendChild(btn);
-            });
-        };
-
-        window.verificarResposta = function(selecionada) {
-            const acertou = selecionada === correctAnswer;
-            const fbScreen = document.getElementById('feedbackScreen');
-            
-            if (acertou) {
-                score += 100;
-                document.getElementById('scoreDisplay').innerText = score;
-                document.getElementById('feedbackIconBox').className = "w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0 bg-emerald-100 text-emerald-600";
-                document.getElementById('feedbackIcon').className = "ph-fill ph-check-circle";
-                document.getElementById('feedbackTitle').className = "text-xl font-extrabold text-emerald-600";
-                document.getElementById('feedbackTitle').innerText = "Correto!";
-                document.getElementById('feedbackMessage').innerText = "Cálculo perfeito.";
-            } else {
-                document.getElementById('feedbackIconBox').className = "w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0 bg-red-100 text-red-500";
-                document.getElementById('feedbackIcon').className = "ph-fill ph-x-circle";
-                document.getElementById('feedbackTitle').className = "text-xl font-extrabold text-red-500";
-                document.getElementById('feedbackTitle').innerText = "Incorreto";
-                document.getElementById('feedbackMessage').innerText = `A resposta era ${formatMoney(correctAnswer)}.`;
-            }
-
-            const { C, i, t, J, M, isJuros } = currentData;
-            document.getElementById('resFormula').innerText = `${C} × ${i/100} × ${t} = ${formatMoney(J)}`;
-            
-            const resFinal = document.getElementById('resFinal');
-            if(!isJuros) {
-                resFinal.classList.remove('hidden');
-                resFinal.innerText = `Montante: ${formatMoney(C)} + ${formatMoney(J)} = ${formatMoney(M)}`;
-            } else {
-                resFinal.classList.add('hidden');
-            }
-
-            fbScreen.classList.remove('hidden');
-            fbScreen.classList.add('flex');
-        };
-
-        window.nextRound = function() {
-            if (currentRound < TOTAL_ROUNDS) {
-                currentRound++;
-                carregarRodada();
-            } else {
-                document.getElementById('feedbackScreen').classList.add('hidden');
-                document.getElementById('feedbackScreen').classList.remove('flex');
-                document.getElementById('gameScreenArea').classList.add('hidden');
+            {gameState === 'playing' && (
+              <div className="mt-auto animate-in fade-in duration-300">
+                <label className="block text-[10px] sm:text-xs font-black text-slate-400 mb-1 sm:mb-2 ml-1 uppercase tracking-widest">Sua Resposta</label>
+                <div className="flex gap-2 sm:gap-3 mb-2">
+                  <input 
+                    type="number" inputMode="numeric" pattern="[0-9]*"
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+                    className="flex-1 text-center text-3xl sm:text-4xl font-extrabold text-slate-800 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-slate-300 focus:border-blue-500 focus:outline-none shadow-inner"
+                    placeholder="0"
+                  />
+                  <div className="bg-slate-200 flex items-center justify-center px-3 sm:px-4 rounded-xl sm:rounded-2xl border-2 border-slate-300">
+                    <span className="text-lg sm:text-xl font-bold text-slate-600">{currentQ.unit}</span>
+                  </div>
+                </div>
                 
-                const endScreen = document.getElementById('endScreen');
-                endScreen.classList.remove('hidden');
-                endScreen.classList.add('flex');
-                
-                let displayScore = 0;
-                const scoreElement = document.getElementById('finalScore');
-                if(score === 0) {
-                    scoreElement.innerText = "0";
-                    return;
-                }
-                const interval = setInterval(() => {
-                    displayScore += 20;
-                    if(displayScore >= score) {
-                        displayScore = score;
-                        clearInterval(interval);
-                    }
-                    scoreElement.innerText = displayScore;
-                }, 30);
-            }
-        };
-
-        // Força início
-        document.addEventListener('DOMContentLoaded', () => {
-            navigate('home');
-        });
-
-    </script>
-</body>
-</html>
-
-
-```
+                {error && (
+                  <div className="text-red-500 mb-2 sm:mb-4 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-bold ml-1">
+                    <AlertCi
