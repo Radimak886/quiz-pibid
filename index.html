@@ -1,422 +1,401 @@
-import React, { useState } from 'react';
-import { 
-  Home, ArrowRight, CheckCircle, 
-  AlertCircle, RefreshCw, ChevronRight, 
-  Award, XCircle, Grid, Map, Droplet, 
-  Square, Triangle, LayoutTemplate, Hammer, Info
-} from 'lucide-react';
 
-// DADOS DOS MÓDULOS (FIGURAS)
-const SHAPES_INFO = {
-  quadrado: {
-    name: 'Quadrado',
-    icon: <Square size={40} className="text-blue-500" />,
-    color: 'bg-blue-600',
-    lightColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    textColor: 'text-blue-700',
-    applications: [
-      'Pisos e porcelanatos (cerâmicas individuais).',
-      'Salas e quartos com medidas iguais.',
-      'Canteiros simétricos para horta.'
-    ],
-    rules: [
-      { type: 'Área', text: 'Lado × Lado' },
-      { type: 'Perímetro', text: 'Lado + Lado + Lado + Lado' }
-    ]
-  },
-  retangulo: {
-    name: 'Retângulo',
-    icon: <LayoutTemplate size={40} className="text-amber-500" />,
-    color: 'bg-amber-600',
-    lightColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
-    textColor: 'text-amber-700',
-    applications: [
-      'Lotes e terrenos convencionais.',
-      'Paredes para pintura e muros.',
-      'Forro de teto e tapetes.'
-    ],
-    rules: [
-      { type: 'Área', text: 'Base × Altura' },
-      { type: 'Perímetro', text: 'Soma de todos os 4 lados' }
-    ]
-  },
-  triangulo: {
-    name: 'Triângulo',
-    icon: <Triangle size={40} className="text-emerald-500" />,
-    color: 'bg-emerald-600',
-    lightColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
-    textColor: 'text-emerald-700',
-    applications: [
-      'Oitão/Frontão de telhados.',
-      'Tesouras e estruturas metálicas.',
-      'Terrenos de esquina e recortes de piso.'
-    ],
-    rules: [
-      { type: 'Área', text: '(Base × Altura) dividido por 2' },
-      { type: 'Perímetro', text: 'Soma de todos os 3 lados' }
-    ]
-  }
-};
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Matemática EJA - PIBID</title>
+  
+  <!-- Tailwind CSS para Estilização -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Babel para ler o código React no navegador -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <style>
+    /* Remove a rolagem horizontal caso aconteça em telas muito pequenas */
+    body { overflow-x: hidden; }
+  </style>
+</head>
+<body class="bg-slate-100">
 
-export default function App() {
-  const [gameState, setGameState] = useState('menu'); 
-  const [selectedShape, setSelectedShape] = useState(null);
-  const [questions, setQuestions] = useState([]);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [score, setScore] = useState(0);
-  const [error, setError] = useState('');
-  const [isCorrect, setIsCorrect] = useState(false);
+  <!-- Onde o App vai ser renderizado -->
+  <div id="root"></div>
 
-  // GERADOR DE QUESTÕES ESPECÍFICAS
-  const generateQuestions = (shape) => {
-    const q = [];
-    
-    if (shape === 'quadrado') {
-      let l1 = Math.floor(Math.random() * 6) + 3;
-      q.push({ shape: 'square', type: 'area', title: 'Piso do Quarto', text: `Seu João tem um quarto quadrado de ${l1}m de lado. Quantos metros quadrados (m²) de cerâmica ele precisa comprar?`, base: l1, height: l1, answer: l1 * l1, unit: 'm²' });
+  <!-- Código React -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+    import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+    import { 
+      Home, ArrowRight, CheckCircle, AlertCircle, RefreshCw, ChevronRight, 
+      Award, XCircle, Grid, Map, Droplet, Square, Triangle, LayoutTemplate, Hammer, Info
+    } from 'https://esm.sh/lucide-react@0.292.0';
 
-      let l2 = Math.floor(Math.random() * 10) + 10;
-      q.push({ shape: 'square', type: 'perimeter', title: 'Cercando Lote', text: `Para cercar um lote perfeitamente quadrado de ${l2}m de lado, quantos metros de arame são necessários para dar uma volta?`, base: l2, height: l2, answer: l2 * 4, unit: 'm' });
+    // DADOS DOS MÓDULOS (FIGURAS)
+    const SHAPES_INFO = {
+      quadrado: {
+        name: 'Quadrado',
+        icon: <Square size={40} className="text-blue-500" />,
+        color: 'bg-blue-600',
+        lightColor: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+        textColor: 'text-blue-700',
+        applications: [
+          'Pisos e porcelanatos (cerâmicas individuais).',
+          'Salas e quartos com medidas iguais.',
+          'Canteiros simétricos para horta.'
+        ],
+        rules: [
+          { type: 'Área', text: 'Lado × Lado' },
+          { type: 'Perímetro', text: 'Lado + Lado + Lado + Lado' }
+        ]
+      },
+      retangulo: {
+        name: 'Retângulo',
+        icon: <LayoutTemplate size={40} className="text-amber-500" />,
+        color: 'bg-amber-600',
+        lightColor: 'bg-amber-50',
+        borderColor: 'border-amber-200',
+        textColor: 'text-amber-700',
+        applications: [
+          'Lotes e terrenos convencionais.',
+          'Paredes para pintura e muros.',
+          'Forro de teto e tapetes.'
+        ],
+        rules: [
+          { type: 'Área', text: 'Base × Altura' },
+          { type: 'Perímetro', text: 'Soma de todos os 4 lados' }
+        ]
+      },
+      triangulo: {
+        name: 'Triângulo',
+        icon: <Triangle size={40} className="text-emerald-500" />,
+        color: 'bg-emerald-600',
+        lightColor: 'bg-emerald-50',
+        borderColor: 'border-emerald-200',
+        textColor: 'text-emerald-700',
+        applications: [
+          'Oitão/Frontão de telhados.',
+          'Tesouras e estruturas metálicas.',
+          'Terrenos de esquina e recortes de piso.'
+        ],
+        rules: [
+          { type: 'Área', text: '(Base × Altura) dividido por 2' },
+          { type: 'Perímetro', text: 'Soma de todos os 3 lados' }
+        ]
+      }
+    };
 
-      let l3 = Math.floor(Math.random() * 4) + 2;
-      q.push({ shape: 'square', type: 'area', title: 'Canteiro Simétrico', text: `Dona Ana quer plantar grama em um canteiro quadrado de ${l3}m de lado. Qual é a área total que receberá a grama?`, base: l3, height: l3, answer: l3 * l3, unit: 'm²' });
+    function App() {
+      const [gameState, setGameState] = useState('menu'); 
+      const [selectedShape, setSelectedShape] = useState(null);
+      const [questions, setQuestions] = useState([]);
+      const [currentIdx, setCurrentIdx] = useState(0);
+      const [userAnswer, setUserAnswer] = useState('');
+      const [score, setScore] = useState(0);
+      const [error, setError] = useState('');
+      const [isCorrect, setIsCorrect] = useState(false);
 
-      let l4 = Math.floor(Math.random() * 5) + 3;
-      q.push({ shape: 'square', type: 'perimeter', title: 'Rodapé', text: `Uma sala quadrada tem ${l4}m de lado. Quantos metros lineares de rodapé são necessários? (Ignore as portas).`, base: l4, height: l4, answer: l4 * 4, unit: 'm' });
-    }
+      const generateQuestions = (shape) => {
+        const q = [];
+        
+        if (shape === 'quadrado') {
+          let l1 = Math.floor(Math.random() * 6) + 3;
+          q.push({ shape: 'square', type: 'area', title: 'Piso do Quarto', text: `Seu João tem um quarto quadrado de ${l1}m de lado. Quantos metros quadrados (m²) de cerâmica ele precisa comprar?`, base: l1, height: l1, answer: l1 * l1, unit: 'm²' });
 
-    if (shape === 'retangulo') {
-      let w1 = Math.floor(Math.random() * 4) + 3; let h1 = w1 + Math.floor(Math.random() * 3) + 1;
-      q.push({ shape: 'rectangle', type: 'area', title: 'Pintura da Parede', text: `O muro retangular mede ${h1}m de comprimento por ${w1}m de altura. Qual a área total a ser pintada?`, base: h1, height: w1, answer: w1 * h1, unit: 'm²' });
+          let l2 = Math.floor(Math.random() * 10) + 10;
+          q.push({ shape: 'square', type: 'perimeter', title: 'Cercando Lote', text: `Para cercar um lote perfeitamente quadrado de ${l2}m de lado, quantos metros de arame são necessários para dar uma volta?`, base: l2, height: l2, answer: l2 * 4, unit: 'm' });
 
-      let w2 = Math.floor(Math.random() * 10) + 10; let h2 = w2 + Math.floor(Math.random() * 5) + 5;
-      q.push({ shape: 'rectangle', type: 'perimeter', title: 'Cerca do Terreno', text: `Um lote retangular tem ${w2}m de frente por ${h2}m de fundo. Quantos metros de tela são precisos para o contorno total?`, base: h2, height: w2, answer: (w2 * 2) + (h2 * 2), unit: 'm' });
+          let l3 = Math.floor(Math.random() * 4) + 2;
+          q.push({ shape: 'square', type: 'area', title: 'Canteiro Simétrico', text: `Dona Ana quer plantar grama em um canteiro quadrado de ${l3}m de lado. Qual é a área total que receberá a grama?`, base: l3, height: l3, answer: l3 * l3, unit: 'm²' });
 
-      let w3 = Math.floor(Math.random() * 3) + 4; let h3 = w3 + Math.floor(Math.random() * 3) + 1;
-      q.push({ shape: 'rectangle', type: 'area', title: 'Forro PVC', text: `Uma loja retangular mede ${w3}m de largura por ${h3}m de comprimento. Qual a área de forro PVC necessária para o teto?`, base: h3, height: w3, answer: w3 * h3, unit: 'm²' });
+          let l4 = Math.floor(Math.random() * 5) + 3;
+          q.push({ shape: 'square', type: 'perimeter', title: 'Rodapé', text: `Uma sala quadrada tem ${l4}m de lado. Quantos metros lineares de rodapé são necessários? (Ignore as portas).`, base: l4, height: l4, answer: l4 * 4, unit: 'm' });
+        }
 
-      let w4 = Math.floor(Math.random() * 4) + 3; let h4 = w4 + Math.floor(Math.random() * 2) + 1;
-      q.push({ shape: 'rectangle', type: 'perimeter', title: 'Borda da Piscina', text: `Para colocar piso antiderrapante na borda de uma piscina retangular de ${w4}m por ${h4}m, precisamos saber seu perímetro. Qual é?`, base: h4, height: w4, answer: (w4 * 2) + (h4 * 2), unit: 'm' });
-    }
+        if (shape === 'retangulo') {
+          let w1 = Math.floor(Math.random() * 4) + 3; let h1 = w1 + Math.floor(Math.random() * 3) + 1;
+          q.push({ shape: 'rectangle', type: 'area', title: 'Pintura da Parede', text: `O muro retangular mede ${h1}m de comprimento por ${w1}m de altura. Qual a área total a ser pintada?`, base: h1, height: w1, answer: w1 * h1, unit: 'm²' });
 
-    if (shape === 'triangulo') {
-      let b1 = (Math.floor(Math.random() * 4) + 2) * 2; 
-      let h1 = Math.floor(Math.random() * 3) + 2;
-      q.push({ shape: 'triangle', type: 'area', title: 'Oitão do Telhado', text: `Para fechar o oitão (parte triangular do telhado), o pedreiro mediu a base de ${b1}m e a altura do meio de ${h1}m. Qual a área de tijolos?`, base: b1, height: h1, answer: (b1 * h1) / 2, unit: 'm²' });
+          let w2 = Math.floor(Math.random() * 10) + 10; let h2 = w2 + Math.floor(Math.random() * 5) + 5;
+          q.push({ shape: 'rectangle', type: 'perimeter', title: 'Cerca do Terreno', text: `Um lote retangular tem ${w2}m de frente por ${h2}m de fundo. Quantos metros de tela são precisos para o contorno total?`, base: h2, height: w2, answer: (w2 * 2) + (h2 * 2), unit: 'm' });
 
-      let s1 = Math.floor(Math.random() * 3) + 3; let s2 = s1 + 1; let s3 = s1 + 2;
-      q.push({ shape: 'triangle', type: 'perimeter', title: 'Canteiro de Esquina', text: `Um canteiro triangular de esquina será cercado. Seus lados medem ${s1}m, ${s2}m e ${s3}m. Quantos metros de mureta serão feitos no total?`, base: s1, sideA: s2, sideB: s3, answer: s1 + s2 + s3, unit: 'm' });
+          let w3 = Math.floor(Math.random() * 3) + 4; let h3 = w3 + Math.floor(Math.random() * 3) + 1;
+          q.push({ shape: 'rectangle', type: 'area', title: 'Forro PVC', text: `Uma loja retangular mede ${w3}m de largura por ${h3}m de comprimento. Qual a área de forro PVC necessária para o teto?`, base: h3, height: w3, answer: w3 * h3, unit: 'm²' });
 
-      let b2 = (Math.floor(Math.random() * 3) + 3) * 2; 
-      let h2 = Math.floor(Math.random() * 4) + 3;
-      q.push({ shape: 'triangle', type: 'area', title: 'Lona de Sombra', text: `Foi cortada uma lona em formato de triângulo com base de ${b2}m e altura de ${h2}m. Qual é a área de sombra que ela faz?`, base: b2, height: h2, answer: (b2 * h2) / 2, unit: 'm²' });
+          let w4 = Math.floor(Math.random() * 4) + 3; let h4 = w4 + Math.floor(Math.random() * 2) + 1;
+          q.push({ shape: 'rectangle', type: 'perimeter', title: 'Borda da Piscina', text: `Para colocar piso antiderrapante na borda de uma piscina retangular de ${w4}m por ${h4}m, precisamos saber seu perímetro. Qual é?`, base: h4, height: w4, answer: (w4 * 2) + (h4 * 2), unit: 'm' });
+        }
 
-      let t1 = Math.floor(Math.random() * 4) + 4;
-      q.push({ shape: 'triangle', type: 'perimeter', title: 'Ferragem da Tesoura', text: `Uma tesoura metálica (triangular) precisa de reforço externo. Seus três lados medem ${t1}m cada um. Qual o perímetro?`, base: t1, sideA: t1, sideB: t1, answer: t1 * 3, unit: 'm' });
-    }
+        if (shape === 'triangulo') {
+          let b1 = (Math.floor(Math.random() * 4) + 2) * 2; 
+          let h1 = Math.floor(Math.random() * 3) + 2;
+          q.push({ shape: 'triangle', type: 'area', title: 'Oitão do Telhado', text: `Para fechar o oitão (parte triangular do telhado), o pedreiro mediu a base de ${b1}m e a altura do meio de ${h1}m. Qual a área de tijolos?`, base: b1, height: h1, answer: (b1 * h1) / 2, unit: 'm²' });
 
-    // Retorna as questões embaralhadas
-    return q.sort(() => 0.5 - Math.random()).slice(0, 4);
-  };
+          let s1 = Math.floor(Math.random() * 3) + 3; let s2 = s1 + 1; let s3 = s1 + 2;
+          q.push({ shape: 'triangle', type: 'perimeter', title: 'Canteiro de Esquina', text: `Um canteiro triangular de esquina será cercado. Seus lados medem ${s1}m, ${s2}m e ${s3}m. Quantos metros de mureta serão feitos no total?`, base: s1, sideA: s2, sideB: s3, answer: s1 + s2 + s3, unit: 'm' });
 
-  const selectModule = (shape) => {
-    setSelectedShape(shape);
-    setGameState('intro');
-  };
+          let b2 = (Math.floor(Math.random() * 3) + 3) * 2; 
+          let h2 = Math.floor(Math.random() * 4) + 3;
+          q.push({ shape: 'triangle', type: 'area', title: 'Lona de Sombra', text: `Foi cortada uma lona em formato de triângulo com base de ${b2}m e altura de ${h2}m. Qual é a área de sombra que ela faz?`, base: b2, height: h2, answer: (b2 * h2) / 2, unit: 'm²' });
 
-  const startGame = () => {
-    // 1. Gera as questões primeiro
-    const newQuestions = generateQuestions(selectedShape);
-    // 2. Salva no estado
-    setQuestions(newQuestions);
-    // 3. Só depois libera a tela de jogo
-    setCurrentIdx(0);
-    setScore(0);
-    setUserAnswer('');
-    setError('');
-    setGameState('playing');
-  };
+          let t1 = Math.floor(Math.random() * 4) + 4;
+          q.push({ shape: 'triangle', type: 'perimeter', title: 'Ferragem da Tesoura', text: `Uma tesoura metálica precisa de reforço externo. Seus três lados medem ${t1}m cada um. Qual o perímetro?`, base: t1, sideA: t1, sideB: t1, answer: t1 * 3, unit: 'm' });
+        }
 
-  const handleVerify = () => {
-    if (!userAnswer || userAnswer.trim() === '') {
-      setError('Por favor, digite um valor numérico.');
-      return;
-    }
-    setError('');
-    const currentQ = questions[currentIdx];
-    const numericAnswer = parseInt(userAnswer, 10);
-    const correct = numericAnswer === currentQ.answer;
-    
-    setIsCorrect(correct);
-    if (correct) setScore(prev => prev + 1);
-    setGameState('feedback');
-  };
+        return q.sort(() => 0.5 - Math.random()).slice(0, 4);
+      };
 
-  const nextQuestion = () => {
-    setUserAnswer('');
-    setIsCorrect(false);
-    if (currentIdx + 1 < questions.length) {
-      setCurrentIdx(prev => prev + 1);
-      setGameState('playing');
-    } else {
-      setGameState('finished');
-    }
-  };
+      const selectModule = (shape) => {
+        setSelectedShape(shape);
+        setGameState('intro');
+      };
 
-  const FooterPIBID = () => (
-    <div className="mt-6 sm:mt-8 text-center pb-4 w-full">
-      <p className="text-slate-400 text-xs sm:text-sm font-bold tracking-widest uppercase">
-        PIBID 2026 - Todos os Direitos Reservados
-      </p>
-    </div>
-  );
+      const startGame = () => {
+        const newQuestions = generateQuestions(selectedShape);
+        setQuestions(newQuestions);
+        setCurrentIdx(0);
+        setScore(0);
+        setUserAnswer('');
+        setError('');
+        setGameState('playing');
+      };
 
-  // --- COMPONENTE DO DESENHO TÉCNICO (SVG) ---
-  const DrawingBlueprint = ({ question }) => {
-    if (!question) return null;
-    
-    const isArea = question.type === 'area';
-    const isTri = question.shape === 'triangle';
-    
-    return (
-      <div className="w-full flex justify-center my-3 sm:my-6 scale-90 sm:scale-100">
-        <div className="relative w-56 h-40 mt-4 ml-4 flex items-center justify-center">
-          
-          <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible drop-shadow-md">
-            <defs>
-              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.5" fill="#3b82f6" opacity="0.3" />
-              </pattern>
-            </defs>
+      const handleVerify = () => {
+        if (!userAnswer || userAnswer.trim() === '') {
+          setError('Por favor, digite um valor numérico.');
+          return;
+        }
+        setError('');
+        const currentQ = questions[currentIdx];
+        const numericAnswer = parseInt(userAnswer, 10);
+        const correct = numericAnswer === currentQ.answer;
+        
+        setIsCorrect(correct);
+        if (correct) setScore(prev => prev + 1);
+        setGameState('feedback');
+      };
 
-            {question.shape === 'square' && (
-              <rect x="15" y="15" width="70" height="70" 
-                fill={isArea ? 'url(#grid)' : 'none'} 
-                stroke={isArea ? '#64748b' : '#f97316'} 
-                strokeWidth={isArea ? '2' : '6'} 
-                className={isArea ? 'fill-blue-100' : ''}
-              />
-            )}
+      const nextQuestion = () => {
+        setUserAnswer('');
+        setIsCorrect(false);
+        if (currentIdx + 1 < questions.length) {
+          setCurrentIdx(prev => prev + 1);
+          setGameState('playing');
+        } else {
+          setGameState('finished');
+        }
+      };
 
-            {question.shape === 'rectangle' && (
-              <rect x="5" y="25" width="90" height="50" 
-                fill={isArea ? 'url(#grid)' : 'none'} 
-                stroke={isArea ? '#64748b' : '#f97316'} 
-                strokeWidth={isArea ? '2' : '6'} 
-                className={isArea ? 'fill-blue-100' : ''}
-              />
-            )}
-
-            {question.shape === 'triangle' && (
-              <polygon points="50,15 10,85 90,85" 
-                fill={isArea ? 'url(#grid)' : 'none'} 
-                stroke={isArea ? '#64748b' : '#f97316'} 
-                strokeWidth={isArea ? '2' : '6'} 
-                className={isArea ? 'fill-blue-100' : ''}
-              />
-            )}
-
-            {isTri && isArea && (
-              <line x1="50" y1="15" x2="50" y2="85" stroke="#64748b" strokeWidth="2" strokeDasharray="4" />
-            )}
-          </svg>
-
-          <span className="absolute bg-white/90 px-2 py-1 rounded font-bold text-[10px] sm:text-xs text-slate-700 shadow-sm z-10">
-            {isArea ? 'ÁREA (?)' : 'CONTORNO (?)'}
-          </span>
-
-          <div className={`absolute w-full text-center font-extrabold text-slate-800 bg-slate-200/90 rounded-md py-0.5 shadow-sm px-2 text-sm sm:text-base w-max left-1/2 -translate-x-1/2 ${isTri ? '-bottom-6' : '-top-7'}`}>
-            {question.base}m {isTri && !isArea && ' (Base)'}
-          </div>
-
-          {(!isTri || isArea) && (
-            <div className="absolute -left-12 h-full flex items-center justify-center font-extrabold text-slate-800">
-              <span className="-rotate-90 bg-slate-200/90 px-2 py-0.5 rounded-md shadow-sm whitespace-nowrap text-sm sm:text-base">
-                {question.height}m {isTri && '(Altura)'}
-              </span>
-            </div>
-          )}
-
-          {isTri && !isArea && (
-            <>
-              <div className="absolute top-1/2 -translate-y-1/2 -left-8 font-extrabold text-slate-800 bg-slate-200/90 px-2 rounded-md text-sm">
-                {question.sideA}m
-              </div>
-              <div className="absolute top-1/2 -translate-y-1/2 -right-8 font-extrabold text-slate-800 bg-slate-200/90 px-2 rounded-md text-sm">
-                {question.sideB}m
-              </div>
-            </>
-          )}
+      const FooterPIBID = () => (
+        <div className="mt-6 sm:mt-8 text-center pb-4 w-full">
+          <p className="text-slate-400 text-xs sm:text-sm font-bold tracking-widest uppercase">
+            PIBID 2026 - Todos os Direitos Reservados
+          </p>
         </div>
-      </div>
-    );
-  };
+      );
 
-  // ==========================================
-  // TELA 1: MENU DE SELEÇÃO
-  // ==========================================
-  if (gameState === 'menu') {
-    return (
-      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
-        <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-          <div className="bg-slate-800 p-8 sm:p-10 text-center text-white relative">
-            <Hammer size={48} className="mx-auto mb-3 text-blue-400" />
-            <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Módulo EJA</h1>
-            <p className="text-slate-300 text-sm sm:text-base font-medium">Selecione a figura para estudar</p>
-          </div>
-          <div className="p-4 sm:p-6 flex flex-col gap-4">
-            {Object.keys(SHAPES_INFO).map(key => {
-              const shape = SHAPES_INFO[key];
-              return (
-                <button 
-                  key={key}
-                  onClick={() => selectModule(key)}
-                  className="w-full flex items-center p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all active:scale-95 group text-left shadow-sm"
-                >
-                  <div className={`p-3 rounded-xl bg-slate-100 group-hover:bg-white transition-colors`}>
-                    {shape.icon}
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <h2 className="text-xl font-bold text-slate-800">{shape.name}</h2>
-                    <p className="text-sm text-slate-500 font-medium mt-1">Área e Perímetro</p>
-                  </div>
-                  <ChevronRight size={24} className="text-slate-300 group-hover:text-blue-500" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <FooterPIBID />
-      </div>
-    );
-  }
+      const DrawingBlueprint = ({ question }) => {
+        if (!question) return null;
+        const isArea = question.type === 'area';
+        const isTri = question.shape === 'triangle';
+        
+        return (
+          <div className="w-full flex justify-center my-3 sm:my-6 scale-90 sm:scale-100">
+            <div className="relative w-56 h-40 mt-4 ml-4 flex items-center justify-center">
+              <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible drop-shadow-md">
+                <defs>
+                  <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <circle cx="2" cy="2" r="1.5" fill="#3b82f6" opacity="0.3" />
+                  </pattern>
+                </defs>
 
-  // ==========================================
-  // TELA 2: INTRODUÇÃO DA FIGURA (APLICAÇÕES)
-  // ==========================================
-  if (gameState === 'intro') {
-    const shape = SHAPES_INFO[selectedShape];
-    return (
-      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
-        <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-          <div className={`${shape.color} p-8 sm:p-10 text-center text-white`}>
-            <div className="bg-white/20 w-max mx-auto p-4 rounded-2xl mb-4 backdrop-blur-sm">
-              {React.cloneElement(shape.icon, { className: 'text-white', size: 56 })}
-            </div>
-            <h1 className="text-3xl font-extrabold mb-2">O {shape.name}</h1>
-            <p className="text-white/80 font-medium">Aplicações Práticas</p>
-          </div>
-          
-          <div className="p-5 sm:p-6 space-y-6">
-            
-            <div>
-              <h3 className="flex items-center gap-2 text-slate-800 font-bold mb-3 uppercase tracking-wider text-sm">
-                <Map size={18} className="text-slate-400" /> Onde usamos na obra?
-              </h3>
-              <ul className="space-y-2">
-                {shape.applications.map((app, i) => (
-                  <li key={i} className="flex items-start gap-2 text-slate-600 text-sm sm:text-base font-medium">
-                    <span className={`${shape.textColor} font-bold`}>•</span> {app}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className={`${shape.lightColor} ${shape.borderColor} border-2 rounded-2xl p-4`}>
-               <h3 className="flex items-center gap-2 text-slate-800 font-bold mb-3 uppercase tracking-wider text-sm">
-                <Info size={18} className={shape.textColor} /> Fórmulas Simples
-              </h3>
-              <div className="space-y-3">
-                {shape.rules.map((rule, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-                    <span className={`text-xs font-black uppercase tracking-widest ${shape.textColor} block mb-1`}>{rule.type}</span>
-                    <span className="text-slate-700 font-bold sm:text-base text-sm">{rule.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button 
-              onClick={startGame}
-              className={`w-full ${shape.color} hover:brightness-110 text-white text-lg sm:text-xl font-bold py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg`}
-            >
-              Começar Exercícios <ArrowRight size={24} />
-            </button>
-            
-            <button 
-              onClick={() => setGameState('menu')}
-              className="w-full text-slate-500 font-bold py-2 text-sm uppercase tracking-wider hover:text-slate-800"
-            >
-              Voltar ao Menu
-            </button>
-          </div>
-        </div>
-        <FooterPIBID />
-      </div>
-    );
-  }
-
-  // ==========================================
-  // TELA 3 e 4: QUIZ E FEEDBACK
-  // ==========================================
-  const currentQ = questions[currentIdx];
-
-  if ((gameState === 'playing' || gameState === 'feedback') && currentQ) {
-    const shapeInfo = SHAPES_INFO[selectedShape];
-    const progress = ((currentIdx) / questions.length) * 100;
-
-    return (
-      <div className="min-h-screen bg-slate-100 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 font-sans">
-        <div className="bg-white sm:max-w-md w-full sm:rounded-3xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0 flex flex-col relative">
-          
-          <div className="w-full bg-slate-200 h-2">
-            <div 
-              className={`${shapeInfo.color} h-2 transition-all duration-500 ease-out`}
-              style={{ width: `${gameState === 'feedback' ? ((currentIdx + 1) / questions.length) * 100 : progress}%` }}
-            ></div>
-          </div>
-
-          <div className={`${shapeInfo.color} p-4 sm:p-6 flex items-center gap-4 text-white shadow-md relative z-10`}>
-            <div className="bg-white/20 p-2 sm:p-3 rounded-2xl shadow-sm">
-              {React.cloneElement(shapeInfo.icon, { className: 'text-white' })}
-            </div>
-            <div>
-              <span className="text-white/80 text-[10px] sm:text-xs font-black tracking-widest uppercase">Questão {currentIdx + 1} de {questions.length}</span>
-              <h2 className="text-xl sm:text-2xl font-bold leading-tight mt-0.5">{currentQ.title}</h2>
-            </div>
-          </div>
-          
-          <div className="p-4 sm:p-6 flex-1 flex flex-col bg-slate-50 relative">
-            
-            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-0 sm:mb-2 relative z-10">
-              <p className="text-slate-700 text-base sm:text-lg leading-relaxed font-medium">
-                {currentQ.text}
-              </p>
-            </div>
-
-            <DrawingBlueprint question={currentQ} />
-
-            {gameState === 'playing' && (
-              <div className="mt-auto animate-in fade-in duration-300">
-                <label className="block text-[10px] sm:text-xs font-black text-slate-400 mb-1 sm:mb-2 ml-1 uppercase tracking-widest">Sua Resposta</label>
-                <div className="flex gap-2 sm:gap-3 mb-2">
-                  <input 
-                    type="number" inputMode="numeric" pattern="[0-9]*"
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-                    className="flex-1 text-center text-3xl sm:text-4xl font-extrabold text-slate-800 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-slate-300 focus:border-blue-500 focus:outline-none shadow-inner"
-                    placeholder="0"
+                {question.shape === 'square' && (
+                  <rect x="15" y="15" width="70" height="70" 
+                    fill={isArea ? 'url(#grid)' : 'none'} 
+                    stroke={isArea ? '#64748b' : '#f97316'} 
+                    strokeWidth={isArea ? '2' : '6'} 
+                    className={isArea ? 'fill-blue-100' : ''}
                   />
-                  <div className="bg-slate-200 flex items-center justify-center px-3 sm:px-4 rounded-xl sm:rounded-2xl border-2 border-slate-300">
-                    <span className="text-lg sm:text-xl font-bold text-slate-600">{currentQ.unit}</span>
+                )}
+
+                {question.shape === 'rectangle' && (
+                  <rect x="5" y="25" width="90" height="50" 
+                    fill={isArea ? 'url(#grid)' : 'none'} 
+                    stroke={isArea ? '#64748b' : '#f97316'} 
+                    strokeWidth={isArea ? '2' : '6'} 
+                    className={isArea ? 'fill-blue-100' : ''}
+                  />
+                )}
+
+                {question.shape === 'triangle' && (
+                  <polygon points="50,15 10,85 90,85" 
+                    fill={isArea ? 'url(#grid)' : 'none'} 
+                    stroke={isArea ? '#64748b' : '#f97316'} 
+                    strokeWidth={isArea ? '2' : '6'} 
+                    className={isArea ? 'fill-blue-100' : ''}
+                  />
+                )}
+
+                {isTri && isArea && (
+                  <line x1="50" y1="15" x2="50" y2="85" stroke="#64748b" strokeWidth="2" strokeDasharray="4" />
+                )}
+              </svg>
+
+              <span className="absolute bg-white/90 px-2 py-1 rounded font-bold text-[10px] sm:text-xs text-slate-700 shadow-sm z-10">
+                {isArea ? 'ÁREA (?)' : 'CONTORNO (?)'}
+              </span>
+
+              <div className={`absolute w-full text-center font-extrabold text-slate-800 bg-slate-200/90 rounded-md py-0.5 shadow-sm px-2 text-sm sm:text-base w-max left-1/2 -translate-x-1/2 ${isTri ? '-bottom-6' : '-top-7'}`}>
+                {question.base}m {isTri && !isArea && ' (Base)'}
+              </div>
+
+              {(!isTri || isArea) && (
+                <div className="absolute -left-12 h-full flex items-center justify-center font-extrabold text-slate-800">
+                  <span className="-rotate-90 bg-slate-200/90 px-2 py-0.5 rounded-md shadow-sm whitespace-nowrap text-sm sm:text-base">
+                    {question.height}m {isTri && '(Altura)'}
+                  </span>
+                </div>
+              )}
+
+              {isTri && !isArea && (
+                <>
+                  <div className="absolute top-1/2 -translate-y-1/2 -left-8 font-extrabold text-slate-800 bg-slate-200/90 px-2 rounded-md text-sm">
+                    {question.sideA}m
+                  </div>
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-8 font-extrabold text-slate-800 bg-slate-200/90 px-2 rounded-md text-sm">
+                    {question.sideB}m
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      if (gameState === 'menu') {
+        return (
+          <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
+            <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+              <div className="bg-slate-800 p-8 sm:p-10 text-center text-white relative">
+                <Hammer size={48} className="mx-auto mb-3 text-blue-400" />
+                <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Módulo EJA</h1>
+                <p className="text-slate-300 text-sm sm:text-base font-medium">Selecione a figura para estudar</p>
+              </div>
+              <div className="p-4 sm:p-6 flex flex-col gap-4">
+                {Object.keys(SHAPES_INFO).map(key => {
+                  const shape = SHAPES_INFO[key];
+                  return (
+                    <button 
+                      key={key}
+                      onClick={() => selectModule(key)}
+                      className="w-full flex items-center p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all active:scale-95 group text-left shadow-sm"
+                    >
+                      <div className={`p-3 rounded-xl bg-slate-100 group-hover:bg-white transition-colors`}>
+                        {shape.icon}
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <h2 className="text-xl font-bold text-slate-800">{shape.name}</h2>
+                        <p className="text-sm text-slate-500 font-medium mt-1">Área e Perímetro</p>
+                      </div>
+                      <ChevronRight size={24} className="text-slate-300 group-hover:text-blue-500" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <FooterPIBID />
+          </div>
+        );
+      }
+
+      if (gameState === 'intro') {
+        const shape = SHAPES_INFO[selectedShape];
+        return (
+          <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
+            <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+              <div className={`${shape.color} p-8 sm:p-10 text-center text-white`}>
+                <div className="bg-white/20 w-max mx-auto p-4 rounded-2xl mb-4 backdrop-blur-sm">
+                  {React.cloneElement(shape.icon, { className: 'text-white', size: 56 })}
+                </div>
+                <h1 className="text-3xl font-extrabold mb-2">O {shape.name}</h1>
+                <p className="text-white/80 font-medium">Aplicações Práticas</p>
+              </div>
+              
+              <div className="p-5 sm:p-6 space-y-6">
+                <div>
+                  <h3 className="flex items-center gap-2 text-slate-800 font-bold mb-3 uppercase tracking-wider text-sm">
+                    <Map size={18} className="text-slate-400" /> Onde usamos na obra?
+                  </h3>
+                  <ul className="space-y-2">
+                    {shape.applications.map((app, i) => (
+                      <li key={i} className="flex items-start gap-2 text-slate-600 text-sm sm:text-base font-medium">
+                        <span className={`${shape.textColor} font-bold`}>•</span> {app}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className={`${shape.lightColor} ${shape.borderColor} border-2 rounded-2xl p-4`}>
+                   <h3 className="flex items-center gap-2 text-slate-800 font-bold mb-3 uppercase tracking-wider text-sm">
+                    <Info size={18} className={shape.textColor} /> Fórmulas Simples
+                  </h3>
+                  <div className="space-y-3">
+                    {shape.rules.map((rule, i) => (
+                      <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                        <span className={`text-xs font-black uppercase tracking-widest ${shape.textColor} block mb-1`}>{rule.type}</span>
+                        <span className="text-slate-700 font-bold sm:text-base text-sm">{rule.text}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
+
+                <button 
+                  onClick={startGame}
+                  className={`w-full ${shape.color} hover:brightness-110 text-white text-lg sm:text-xl font-bold py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg`}
+                >
+                  Começar Exercícios <ArrowRight size={24} />
+                </button>
                 
-                {error && (
-                  <div className="text-red-500 mb-2 sm:mb-4 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-bold ml-1">
-                    <AlertCi
+                <button 
+                  onClick={() => setGameState('menu')}
+                  className="w-full text-slate-500 font-bold py-2 text-sm uppercase tracking-wider hover:text-slate-800"
+                >
+                  Voltar ao Menu
+                </button>
+              </div>
+            </div>
+            <FooterPIBID />
+          </div>
+        );
+      }
+
+      const currentQ = questions[currentIdx];
+
+      if ((gameState === 'playing' || gameState === 'feedback') && currentQ) {
+        const shapeInfo = SHAPES_INFO[selectedShape];
+        const progress = ((currentIdx) / questions.length) * 100;
+
+        return (
+          <div className="min-h-screen bg-slate-100 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 font-sans">
+            <div className="bg-white sm:max-w-md w-full sm:rounded-3xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0 flex flex-col relative">
+              <div className="w-full bg-slate-200 h-2">
+                <div 
+                  className={`${shapeInfo.color} h-2 transition-all duration-500 ease-out`}
+                  style={{ width: `${gameState === 'feedback' ? ((currentIdx + 1) / questions.length) * 100 : progress}%` }}
+                ></div>
+              </div>
+
+              <div className={`${shapeInfo.color} p-4 sm:p-6 flex items-center gap-4 text-white shadow-md relative z-10`}>
+                <div className="bg-white/20 p-2 sm:p-3 rounded-2xl shadow-sm">
+                  {React.cloneElement(shapeInfo.icon, { className: 'text-white' })}
+                </div>
+                <div>
+                  <span className="text-white/80 text-[10px] sm:text-xs font-black tracking-widest uppercase">Questão {currentIdx + 1} de {questions.length}</span>
+                  <h2 className="text-xl sm:text-2xl font-bold leading-tight mt-0.5">{currentQ.title}</h2>
+                </div>
+              </div>
+              
+              <div className="p-4 sm:p-6 flex-1 flex flex-col bg-slate-50 relative">
+                <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-0 sm:mb-2 relative z-10">
+                  <p className="text-slate-700 text-base sm:text-lg leading-relaxed font-me
