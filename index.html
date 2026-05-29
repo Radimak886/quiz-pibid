@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -15,6 +15,12 @@
   <style>
     /* Remove a rolagem horizontal caso aconteça em telas muito pequenas */
     body { overflow-x: hidden; }
+    /* Estilização para ocultar setas de incremento do input number */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
   </style>
 </head>
 <body class="bg-slate-100">
@@ -101,13 +107,13 @@
         
         if (shape === 'quadrado') {
           let l1 = Math.floor(Math.random() * 6) + 3;
-          q.push({ shape: 'square', type: 'area', title: 'Piso do Quarto', text: `Seu João tem um quarto quadrado de ${l1}m de lado. Quantos metros quadrados (m²) de cerâmica ele precisa comprar?`, base: l1, height: l1, answer: l1 * l1, unit: 'm²' });
+          q.push({ shape: 'square', type: 'area', title: 'Piso do Quarto', text: `Um quarto quadrado tem ${l1}m de lado. Quantos metros quadrados (m²) de cerâmica ele precisa comprar?`, base: l1, height: l1, answer: l1 * l1, unit: 'm²' });
 
           let l2 = Math.floor(Math.random() * 10) + 10;
           q.push({ shape: 'square', type: 'perimeter', title: 'Cercando Lote', text: `Para cercar um lote perfeitamente quadrado de ${l2}m de lado, quantos metros de arame são necessários para dar uma volta?`, base: l2, height: l2, answer: l2 * 4, unit: 'm' });
 
           let l3 = Math.floor(Math.random() * 4) + 2;
-          q.push({ shape: 'square', type: 'area', title: 'Canteiro Simétrico', text: `Dona Ana quer plantar grama em um canteiro quadrado de ${l3}m de lado. Qual é a área total que receberá a grama?`, base: l3, height: l3, answer: l3 * l3, unit: 'm²' });
+          q.push({ shape: 'square', type: 'area', title: 'Canteiro Simétrico', text: `Para plantar grama em um canteiro quadrado de ${l3}m de lado. Qual é a área total que receberá a grama?`, base: l3, height: l3, answer: l3 * l3, unit: 'm²' });
 
           let l4 = Math.floor(Math.random() * 5) + 3;
           q.push({ shape: 'square', type: 'perimeter', title: 'Rodapé', text: `Uma sala quadrada tem ${l4}m de lado. Quantos metros lineares de rodapé são necessários? (Ignore as portas).`, base: l4, height: l4, answer: l4 * 4, unit: 'm' });
@@ -115,7 +121,7 @@
 
         if (shape === 'retangulo') {
           let w1 = Math.floor(Math.random() * 4) + 3; let h1 = w1 + Math.floor(Math.random() * 3) + 1;
-          q.push({ shape: 'rectangle', type: 'area', title: 'Pintura da Parede', text: `O muro retangular mede ${h1}m de comprimento por ${w1}m de altura. Qual a área total a ser pintada?`, base: h1, height: w1, answer: w1 * h1, unit: 'm²' });
+          q.push({ shape: 'rectangle', type: 'area', title: 'Pintura da Parede', text: `Um muro retangular mede ${h1}m de comprimento por ${w1}m de altura. Qual a área total a ser pintada?`, base: h1, height: w1, answer: w1 * h1, unit: 'm²' });
 
           let w2 = Math.floor(Math.random() * 10) + 10; let h2 = w2 + Math.floor(Math.random() * 5) + 5;
           q.push({ shape: 'rectangle', type: 'perimeter', title: 'Cerca do Terreno', text: `Um lote retangular tem ${w2}m de frente por ${h2}m de fundo. Quantos metros de tela são precisos para o contorno total?`, base: h2, height: w2, answer: (w2 * 2) + (h2 * 2), unit: 'm' });
@@ -130,7 +136,7 @@
         if (shape === 'triangulo') {
           let b1 = (Math.floor(Math.random() * 4) + 2) * 2; 
           let h1 = Math.floor(Math.random() * 3) + 2;
-          q.push({ shape: 'triangle', type: 'area', title: 'Oitão do Telhado', text: `Para fechar o oitão (parte triangular do telhado), o pedreiro mediu a base de ${b1}m e a altura do meio de ${h1}m. Qual a área de tijolos?`, base: b1, height: h1, answer: (b1 * h1) / 2, unit: 'm²' });
+          q.push({ shape: 'triangle', type: 'area', title: 'Oitão do Telhado', text: `Para fechar o oitão (parte triangular do telhado), mediu-se a base de ${b1}m e a altura do meio de ${h1}m. Qual a área?`, base: b1, height: h1, answer: (b1 * h1) / 2, unit: 'm²' });
 
           let s1 = Math.floor(Math.random() * 3) + 3; let s2 = s1 + 1; let s3 = s1 + 2;
           q.push({ shape: 'triangle', type: 'perimeter', title: 'Canteiro de Esquina', text: `Um canteiro triangular de esquina será cercado. Seus lados medem ${s1}m, ${s2}m e ${s3}m. Quantos metros de mureta serão feitos no total?`, base: s1, sideA: s2, sideB: s3, answer: s1 + s2 + s3, unit: 'm' });
@@ -140,7 +146,7 @@
           q.push({ shape: 'triangle', type: 'area', title: 'Lona de Sombra', text: `Foi cortada uma lona em formato de triângulo com base de ${b2}m e altura de ${h2}m. Qual é a área de sombra que ela faz?`, base: b2, height: h2, answer: (b2 * h2) / 2, unit: 'm²' });
 
           let t1 = Math.floor(Math.random() * 4) + 4;
-          q.push({ shape: 'triangle', type: 'perimeter', title: 'Ferragem da Tesoura', text: `Uma tesoura metálica precisa de reforço externo. Seus três lados medem ${t1}m cada um. Qual o perímetro?`, base: t1, sideA: t1, sideB: t1, answer: t1 * 3, unit: 'm' });
+          q.push({ shape: 'triangle', type: 'perimeter', title: 'Ferragem da Tesoura', text: `Uma tesoura metálica (triangular) precisa de reforço externo. Seus três lados medem ${t1}m cada um. Qual o perímetro?`, base: t1, sideA: t1, sideB: t1, answer: t1 * 3, unit: 'm' });
         }
 
         return q.sort(() => 0.5 - Math.random()).slice(0, 4);
@@ -397,5 +403,4 @@
               </div>
               
               <div className="p-4 sm:p-6 flex-1 flex flex-col bg-slate-50 relative">
-                <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-0 sm:mb-2 relative z-10">
-                  <p className="text-slate-700 text-base sm:text-lg leading-relaxed font-me
+           
